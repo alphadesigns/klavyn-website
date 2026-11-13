@@ -51,3 +51,43 @@ src/app/globals.css      design tokens (light and dark) and all styles
 
 Copy must stay true to the product. Claims about the cryptography come from the
 CredVault README; check them there before changing them.
+
+## Deploying
+
+The site runs as a Next server behind the nginx already on the host, in the
+same shape as the API: TLS is a Cloudflare Origin Certificate, the app listens
+on loopback only, and the firewall allows 80/443 from Cloudflare alone.
+
+```sh
+# on the server, as root
+git clone https://github.com/cjaymoni/credvault-website /srv/klavyn-website
+chown -R deploy:deploy /srv/klavyn-website
+
+# as deploy
+cd /srv/klavyn-website
+printf 'NEXT_PUBLIC_SITE_URL=https://klavyn.com\n' > .env
+npm ci && npm run build
+
+# as root
+cp deploy/klavyn-web.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now klavyn-web
+```
+
+Then point the apex and `www` server blocks at `127.0.0.1:3100` instead of a
+static root, and `nginx -t` before reloading — that host serves other sites,
+so a bad block takes them down too.
+
+### The policy pages
+
+`/privacy` and `/terms` are not written here. They are generated from the
+Markdown in the klavyn repository, which is the same source the app renders
+before sign-up, so the two cannot drift:
+
+```sh
+node scripts/sync-legal.mjs ../klavyn
+```
+
+Re-run it whenever those documents change, and commit the regenerated
+`src/content/legal.generated.ts`. While the sources still contain
+`[PLACEHOLDER]` markers the pages show a draft notice, and `tests/legal.test.ts`
+makes sure that notice cannot be dropped while a placeholder remains.

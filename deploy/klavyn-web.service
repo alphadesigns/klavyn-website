@@ -1,0 +1,31 @@
+# The marketing site, behind the nginx already on the host.
+#
+# Matches the pattern the other Next app on this box uses (des-web.service):
+# run by the unprivileged `deploy` user, port on loopback only, restarted by
+# systemd. nginx terminates TLS with a Cloudflare Origin Certificate and
+# proxies to the port below; nothing here is reachable from the internet
+# directly, and the firewall allows 80/443 from Cloudflare only.
+#
+# Install:
+#   sudo cp deploy/klavyn-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now klavyn-web
+[Unit]
+Description=klavyn marketing site
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/srv/klavyn-website
+EnvironmentFile=/srv/klavyn-website/.env
+# 3000 is taken by the other site on this host.
+Environment=PORT=3100
+Environment=HOME=/home/deploy
+ExecStart=/usr/bin/npx next start
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

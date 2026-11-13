@@ -37,7 +37,8 @@ export function SiteFooter() {
         </div>
         <p className="site-footer__legal">
           {site.name} is free software under the {site.license} license. Version{" "}
-          {site.version}, pre-release.
+          {site.version}, pre-release.{" "}
+          <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link>
         </p>
       </div>
     </footer>

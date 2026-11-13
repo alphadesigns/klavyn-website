@@ -70,6 +70,10 @@ export const routes = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/security", changeFrequency: "monthly", priority: 0.8 },
   { path: "/self-host", changeFrequency: "monthly", priority: 0.8 },
+  // Linked from the Google consent screen as well as the footer, so they are
+  // in the sitemap even though they are not pages anyone browses to.
+  { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
+  { path: "/terms", changeFrequency: "monthly", priority: 0.3 },
 ] as const;
 
 export function absoluteUrl(path: string): string {
