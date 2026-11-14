@@ -21,7 +21,10 @@ EnvironmentFile=/srv/klavyn-website/.env
 # 3000 is taken by the other site on this host.
 Environment=PORT=3100
 Environment=HOME=/home/deploy
-ExecStart=/usr/bin/npx next start
+# Bound to loopback, not just firewalled off it. ufw's default-deny already
+# hides this port, but that is one `ufw reset` away from being untrue, and
+# nginx is the only thing that should ever reach it.
+ExecStart=/usr/bin/npx next start -H 127.0.0.1
 Restart=always
 RestartSec=5
 StandardOutput=journal
