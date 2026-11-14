@@ -10,7 +10,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-header__inner">
         <Link href="/" className="brand" aria-label={`${site.name} home`}>
-          <Image src="/logo.png" alt="" width={28} height={28} priority />
+          <Image src="/logo.svg" alt="" width={28} height={28} priority />
           {site.name}
         </Link>
         <nav className="site-nav" aria-label="Main">

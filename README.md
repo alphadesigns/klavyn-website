@@ -1,6 +1,6 @@
-# credvault-web
+# klavyn-web
 
-Marketing site for [CredVault](https://github.com/cjaymoni/credvault), the
+Marketing site for [Klavyn](https://github.com/cjaymoni/klavyn), the
 self-hosted, end-to-end encrypted password manager. Next.js 16 (App Router),
 fully static, no client-side analytics or third-party scripts.
 
@@ -50,7 +50,7 @@ src/app/globals.css      design tokens (light and dark) and all styles
 - Semantic landmarks, one `h1` per page, light and dark `theme-color`
 
 Copy must stay true to the product. Claims about the cryptography come from the
-CredVault README; check them there before changing them.
+Klavyn README; check them there before changing them.
 
 ## Deploying
 
@@ -60,7 +60,7 @@ on loopback only, and the firewall allows 80/443 from Cloudflare alone.
 
 ```sh
 # on the server, as root
-git clone https://github.com/cjaymoni/credvault-website /srv/klavyn-website
+git clone https://github.com/cjaymoni/klavyn-website /srv/klavyn-website
 chown -R deploy:deploy /srv/klavyn-website
 
 # as deploy

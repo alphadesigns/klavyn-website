@@ -256,7 +256,7 @@ function Features() {
     {
       icon: FingerprintIcon,
       title: "No silent key swaps",
-      body: "Confirm a short fingerprint once when you first share. A compromised server can’t slip in its own key, and CredVault remembers the people you’ve verified.",
+      body: "Confirm a short fingerprint once when you first share. A compromised server can’t slip in its own key, and Klavyn remembers the people you’ve verified.",
     },
     {
       icon: DevicesIcon,

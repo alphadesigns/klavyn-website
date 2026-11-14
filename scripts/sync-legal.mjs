@@ -9,7 +9,7 @@
 // service does.
 //
 // Run with:  node scripts/sync-legal.mjs [path-to-klavyn-repo]
-// Default:   ../klavyn, then ../credvault-rs
+// Default:   ../klavyn
 "use strict";
 
 import fs from "node:fs";
@@ -25,7 +25,7 @@ const SOURCES = [
 ];
 
 function findRepo() {
-  const candidates = [process.argv[2], "../klavyn", "../credvault-rs"].filter(Boolean);
+  const candidates = [process.argv[2], "../klavyn"].filter(Boolean);
   for (const candidate of candidates) {
     const resolved = path.resolve(ROOT, candidate);
     if (SOURCES.every(({ file }) => fs.existsSync(path.join(resolved, file)))) return resolved;

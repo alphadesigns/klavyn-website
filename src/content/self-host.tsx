@@ -35,7 +35,7 @@ export function buildSnippet(lines: readonly ShellLine[]): Snippet {
 }
 
 export const selfHostCommands = buildSnippet([
-  { cmd: `git clone ${site.repoUrl} && cd credvault/deploy` },
+  { cmd: `git clone ${site.repoUrl} && cd klavyn/deploy` },
   { cmd: "cp .env.example .env && chmod 600 .env" },
   { comment: "set your domain and ACME email; to limit sign-ups, also set a token from:" },
   { cmd: "openssl rand -base64 32" },
@@ -46,8 +46,8 @@ export const selfHostCommands = buildSnippet([
 
 export const buildFromSourceCommands = buildSnippet([
   { comment: "server" },
-  { cmd: "cargo build --release -p credvault-server" },
-  { cmd: "./target/release/credvault-server --bind 0.0.0.0:8787 --data-dir /srv/credvault" },
+  { cmd: "cargo build --release -p klavyn-server" },
+  { cmd: "./target/release/klavyn-server --bind 0.0.0.0:8787 --data-dir /srv/klavyn" },
   { comment: "desktop app installer, written to target/release/bundle" },
   { cmd: 'cargo install tauri-cli --version "^2" --locked' },
   { cmd: "cd apps/desktop && cargo tauri build" },
@@ -65,5 +65,5 @@ export const upgradeCommands = buildSnippet([
   { cmd: "./backup.sh" },
   { cmd: "git pull" },
   { cmd: "docker compose up -d --build" },
-  { cmd: "docker compose logs -f credvault" },
+  { cmd: "docker compose logs -f klavyn" },
 ]);

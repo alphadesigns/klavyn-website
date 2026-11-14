@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { logo } from "@/lib/logo";
 import { site } from "@/lib/site";
 
 export const alt = `${site.name}: the password manager you host yourself`;
@@ -17,36 +18,29 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 80,
-          background: "radial-gradient(circle at 85% 10%, #134b45 0%, #0b1211 55%)",
-          color: "#e8f0ee",
+          background: "radial-gradient(circle at 85% 10%, #1d5a52 0%, #123f3a 55%)",
+          color: "#f2efe7",
           fontFamily: "sans-serif",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 16,
-              background: "#0f766e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div style={{ width: 26, height: 26, borderRadius: 13, border: "6px solid #fff" }} />
-          </div>
+          <svg width={64} height={64} viewBox={logo.viewBox}>
+            <rect width={300} height={300} rx={logo.tileRadius} fill={logo.colors.evergreen} />
+            <path d={logo.paths.castle} fill={logo.colors.ivory} />
+            <path d={logo.paths.arch} fill={logo.colors.evergreen} />
+            <path d={logo.paths.portcullis} fill={logo.colors.ivory} />
+          </svg>
           <div style={{ fontSize: 40, fontWeight: 700 }}>{site.name}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>
             Your passwords. Your server.
           </div>
-          <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2, color: "#2fc4b2" }}>
+          <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2, color: "#a6dcca" }}>
             Nobody else’s keys.
           </div>
         </div>
-        <div style={{ display: "flex", gap: 32, fontSize: 26, color: "#9fb3ae" }}>
+        <div style={{ display: "flex", gap: 32, fontSize: 26, color: "#b3c4bd" }}>
           <span>End-to-end encrypted</span>
           <span>·</span>
           <span>Self-hosted</span>

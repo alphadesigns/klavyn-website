@@ -16,14 +16,14 @@ import { tocFromSections } from "@/lib/toc";
 export const metadata = pageMetadata({
   title: "Self-host your password server",
   description:
-    "Deploy the CredVault server on a VPS with Docker Compose and automatic HTTPS, or build it from source. Covers registration, firewall, backups and upgrades.",
+    "Deploy the Klavyn server on a VPS with Docker Compose and automatic HTTPS, or build it from source. Covers registration, firewall, backups and upgrades.",
   path: "/self-host",
 });
 
 const serverOptions = [
-  ["--registration-token TOKEN", "CREDVAULT_REGISTRATION_TOKEN", "Only people with this token can create an account. Left blank, as .env.example ships, anyone who can reach the server can."],
-  ["--closed-registration", "CREDVAULT_CLOSED_REGISTRATION", "No new accounts; existing ones keep working. true, yes, on or 1 close it. Ambiguous values such as off or no stop the server rather than being guessed at, and so does combining it with a token."],
-  ["--trust-forwarded-for", "CREDVAULT_TRUST_FORWARDED_FOR", "Rate-limit by the rightmost X-Forwarded-For address. Only behind a proxy that sets it."],
+  ["--registration-token TOKEN", "KLAVYN_REGISTRATION_TOKEN", "Only people with this token can create an account. Left blank, as .env.example ships, anyone who can reach the server can."],
+  ["--closed-registration", "KLAVYN_CLOSED_REGISTRATION", "No new accounts; existing ones keep working. true, yes, on or 1 close it. Ambiguous values such as off or no stop the server rather than being guessed at, and so does combining it with a token."],
+  ["--trust-forwarded-for", "KLAVYN_TRUST_FORWARDED_FOR", "Rate-limit by the rightmost X-Forwarded-For address. Only behind a proxy that sets it."],
 ];
 
 /** Section headings, in page order; also the "On this page" list. */
@@ -116,7 +116,7 @@ export default function SelfHostPage() {
           <p>
             The server prints its registration policy every time it starts, so
             you can check what a host is running with{" "}
-            <code>docker compose logs credvault | grep &quot;registration policy&quot;</code>.
+            <code>docker compose logs klavyn | grep &quot;registration policy&quot;</code>.
             Logins and registrations are rate-limited per client address out of
             the box.
           </p>

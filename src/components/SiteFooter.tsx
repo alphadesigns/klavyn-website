@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="site-footer__inner">
           <div>
             <Link href="/" className="brand">
-              <Image src="/logo.png" alt="" width={28} height={28} />
+              <Image src="/logo.svg" alt="" width={28} height={28} />
               {site.name}
             </Link>
             <p>

@@ -9,7 +9,7 @@ import { tocFromSections } from "@/lib/toc";
 export const metadata = pageMetadata({
   title: "Security model: how the encryption works",
   description:
-    "How CredVault keeps your server from reading your passwords: Argon2id key stretching, a separate AES-256-GCM key per secret, X25519 sharing and key fingerprints.",
+    "How Klavyn keeps your server from reading your passwords: Argon2id key stretching, a separate AES-256-GCM key per secret, X25519 sharing and key fingerprints.",
   path: "/security",
 });
 

@@ -55,7 +55,7 @@ export const faq: FaqItem[] = [
   {
     question: "Why do I have to confirm a fingerprint when I share?",
     answer:
-      "Public keys come from the server. A compromised server could hand you its own key instead of your friend’s. Checking the fingerprint over another channel means you only ever encrypt to the key you expected. After the first time, CredVault remembers it.",
+      "Public keys come from the server. A compromised server could hand you its own key instead of your friend’s. Checking the fingerprint over another channel means you only ever encrypt to the key you expected. After the first time, Klavyn remembers it.",
   },
   {
     question: "Which platforms does it run on?",
@@ -64,11 +64,11 @@ export const faq: FaqItem[] = [
   {
     question: "How much does it cost?",
     answer:
-      "Nothing. CredVault is free and MIT-licensed. You pay only for the server you run it on, and a small VPS is enough.",
+      "Nothing. Klavyn is free and MIT-licensed. You pay only for the server you run it on, and a small VPS is enough.",
   },
   {
     question: "Is it ready for production?",
     answer:
-      "Not yet. CredVault is pre-release: storage formats aren’t frozen and nothing is migrated between builds. Try it, read the code and report issues, but keep your current password manager until a stable release.",
+      "Not yet. Klavyn is pre-release: storage formats aren’t frozen and nothing is migrated between builds. Try it, read the code and report issues, but keep your current password manager until a stable release.",
   },
 ];

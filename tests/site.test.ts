@@ -8,9 +8,9 @@ describe("normaliseSiteUrl", () => {
   });
 
   it("keeps only the origin, so paths can be appended safely", () => {
-    expect(normaliseSiteUrl("https://credvault.dev/")).toBe("https://credvault.dev");
-    expect(normaliseSiteUrl("https://credvault.dev/some/path?q=1#x")).toBe("https://credvault.dev");
-    expect(normaliseSiteUrl("  https://credvault.dev  ")).toBe("https://credvault.dev");
+    expect(normaliseSiteUrl("https://klavyn.dev/")).toBe("https://klavyn.dev");
+    expect(normaliseSiteUrl("https://klavyn.dev/some/path?q=1#x")).toBe("https://klavyn.dev");
+    expect(normaliseSiteUrl("  https://klavyn.dev  ")).toBe("https://klavyn.dev");
   });
 
   it("keeps a non-default port", () => {
@@ -18,11 +18,11 @@ describe("normaliseSiteUrl", () => {
   });
 
   it("rejects values that are not absolute URLs", () => {
-    expect(() => normaliseSiteUrl("credvault.dev")).toThrow(/not a valid URL: "credvault.dev"/);
+    expect(() => normaliseSiteUrl("klavyn.dev")).toThrow(/not a valid URL: "klavyn.dev"/);
   });
 
   it("rejects non-http protocols", () => {
     expect(() => normaliseSiteUrl("javascript:alert(1)")).toThrow(/must use http or https/);
-    expect(() => normaliseSiteUrl("ftp://credvault.dev")).toThrow(/got "ftp:"/);
+    expect(() => normaliseSiteUrl("ftp://klavyn.dev")).toThrow(/got "ftp:"/);
   });
 });

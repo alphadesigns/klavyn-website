@@ -38,8 +38,7 @@ function applyTheme(theme: Theme) {
       .forEach((meta) => meta.setAttribute("content", THEME_COLORS[theme]));
   }, window);
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch (error) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);  } catch (error) {
     // Storage can be blocked (private mode, site data off); the switch still
     // applies for this page view, it just will not be remembered.
     console.warn(`Could not save theme "${theme}" to localStorage`, error);

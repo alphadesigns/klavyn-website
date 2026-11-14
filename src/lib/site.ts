@@ -4,6 +4,8 @@
  * repository) is made once.
  */
 
+import { logo } from "@/lib/logo";
+
 /** Used when NEXT_PUBLIC_SITE_URL is unset, e.g. local development. */
 const FALLBACK_SITE_URL = "http://localhost:3000";
 
@@ -33,17 +35,17 @@ export function normaliseSiteUrl(raw: string | undefined): string {
 }
 
 export const site = {
-  name: "CredVault",
+  name: "Klavyn",
   /** Under 60 characters so search results show it whole. */
-  title: "CredVault · Self-hosted, end-to-end encrypted passwords",
+  title: "Klavyn · Self-hosted, end-to-end encrypted passwords",
   /** Under 160 characters for the same reason. */
   description:
     "A password manager you run on your own server. Everything is encrypted on your device, so the server stores only ciphertext. Free and open source.",
   url: normaliseSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
-  repoUrl: "https://github.com/cjaymoni/credvault",
-  license: "MIT",
+  repoUrl: "https://github.com/cjaymoni/klavyn",  license: "MIT",
   version: "0.1.3",
-  themeColor: "#0f766e",
+  /** Brand evergreen, from the logo. */
+  themeColor: logo.colors.evergreen,
   locale: "en_US",
   keywords: [
     "self-hosted password manager",

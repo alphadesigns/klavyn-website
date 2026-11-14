@@ -6,7 +6,7 @@ import { site } from "@/lib/site";
  * list, so publishing a new platform is a one-line change here (flip its
  * `status`) and nothing on the site can claim a platform that has no build.
  *
- * Facts come from the CredVault release notes (.github/release-notes.md) and
+ * Facts come from the Klavyn release notes (.github/release-notes.md) and
  * the assets attached to the latest GitHub release.
  */
 export type PlatformStatus = "available" | "next-release" | "not-distributed";
@@ -27,7 +27,7 @@ export const platforms: readonly Platform[] = [
     status: "available",
     file: "Universal .dmg (Apple silicon and Intel)",
     firstLaunch: [
-      "Open the .dmg and drag CredVault to Applications.",
+      "Open the .dmg and drag Klavyn to Applications.",
       "The first launch is refused because the app isn’t signed yet. Open System Settings → Privacy & Security and choose Open Anyway.",
     ],
   },

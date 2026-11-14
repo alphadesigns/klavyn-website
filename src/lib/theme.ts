@@ -7,16 +7,16 @@
 
 export type Theme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "credvault-theme";
+export const THEME_STORAGE_KEY = "klavyn-theme";
 export const THEME_ATTRIBUTE = "data-theme";
 /** Fired on window after the theme changes, so toggles stay in sync. */
-export const THEME_CHANGE_EVENT = "credvault:themechange";
+export const THEME_CHANGE_EVENT = "klavyn:themechange";
 export const DARK_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
 /** Browser UI colour per theme; matches --bg in globals.css. */
 export const THEME_COLORS: Readonly<Record<Theme, string>> = {
-  light: "#f7f8f6",
-  dark: "#0b1211",
+  light: "#f7f5ef",
+  dark: "#0a1715",
 };
 
 /** Narrows an untrusted stored value to a theme, or null when it is not one. */
