@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_THEME,
   NO_TRANSITIONS_CSS,
   THEME_ATTRIBUTE,
   THEME_COLORS,
@@ -26,14 +27,14 @@ describe("parseTheme", () => {
 });
 
 describe("resolveTheme", () => {
-  it("follows the system when nothing is saved", () => {
-    expect(resolveTheme(null, true)).toBe("dark");
-    expect(resolveTheme(null, false)).toBe("light");
+  it("is light when nothing is saved", () => {
+    expect(DEFAULT_THEME).toBe("light");
+    expect(resolveTheme(null)).toBe("light");
   });
 
-  it("prefers a saved choice over the system", () => {
-    expect(resolveTheme("light", true)).toBe("light");
-    expect(resolveTheme("dark", false)).toBe("dark");
+  it("keeps a saved choice", () => {
+    expect(resolveTheme("light")).toBe("light");
+    expect(resolveTheme("dark")).toBe("dark");
   });
 });
 
@@ -69,7 +70,7 @@ describe("themeInitScript", () => {
     expect(keys).toEqual([THEME_STORAGE_KEY]);
   });
 
-  it("leaves the page on the system theme when nothing valid is saved", () => {
+  it("leaves the page on the default theme when nothing valid is saved", () => {
     for (const saved of [null, "system", "<script>"]) {
       const { attributes, metas } = runInitScript({ getItem: () => saved });
       expect(attributes.size).toBe(0);

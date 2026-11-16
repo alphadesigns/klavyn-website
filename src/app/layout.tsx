@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { softwareApplicationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
-import { THEME_COLORS, themeInitScript } from "@/lib/theme";
+import { DEFAULT_THEME, THEME_COLORS, themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
@@ -37,11 +37,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
-    { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
-  ],
-  colorScheme: "light dark",
+  // The default theme only; the head script swaps both for a saved dark choice.
+  themeColor: THEME_COLORS[DEFAULT_THEME],
+  colorScheme: DEFAULT_THEME,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

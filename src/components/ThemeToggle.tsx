@@ -3,7 +3,6 @@
 import { useSyncExternalStore } from "react";
 import { MoonIcon, SunIcon } from "@/components/icons";
 import {
-  DARK_SCHEME_QUERY,
   THEME_ATTRIBUTE,
   THEME_CHANGE_EVENT,
   THEME_COLORS,
@@ -16,18 +15,12 @@ import {
 } from "@/lib/theme";
 
 function readTheme(): Theme {
-  const saved = parseTheme(document.documentElement.getAttribute(THEME_ATTRIBUTE));
-  return resolveTheme(saved, window.matchMedia(DARK_SCHEME_QUERY).matches);
+  return resolveTheme(parseTheme(document.documentElement.getAttribute(THEME_ATTRIBUTE)));
 }
 
 function subscribe(onChange: () => void) {
-  const media = window.matchMedia(DARK_SCHEME_QUERY);
-  media.addEventListener("change", onChange);
   window.addEventListener(THEME_CHANGE_EVENT, onChange);
-  return () => {
-    media.removeEventListener("change", onChange);
-    window.removeEventListener(THEME_CHANGE_EVENT, onChange);
-  };
+  return () => window.removeEventListener(THEME_CHANGE_EVENT, onChange);
 }
 
 function applyTheme(theme: Theme) {
@@ -38,7 +31,8 @@ function applyTheme(theme: Theme) {
       .forEach((meta) => meta.setAttribute("content", THEME_COLORS[theme]));
   }, window);
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);  } catch (error) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {
     // Storage can be blocked (private mode, site data off); the switch still
     // applies for this page view, it just will not be remembered.
     console.warn(`Could not save theme "${theme}" to localStorage`, error);

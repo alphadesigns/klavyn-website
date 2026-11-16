@@ -1,8 +1,9 @@
 /**
- * Colour theme selection. With no saved choice the site follows the system
- * setting (prefers-color-scheme); a choice made with the header toggle is
- * saved in localStorage and applied as `data-theme` on <html>, which the
- * tokens in globals.css read through `color-scheme` and `light-dark()`.
+ * Colour theme selection. The site is light unless the reader picks dark
+ * with the header toggle; the system setting (prefers-color-scheme) is
+ * deliberately not consulted. The choice is saved in localStorage and applied
+ * as `data-theme` on <html>, which the tokens in globals.css read through
+ * `color-scheme` and `light-dark()`.
  */
 
 export type Theme = "light" | "dark";
@@ -11,7 +12,8 @@ export const THEME_STORAGE_KEY = "klavyn-theme";
 export const THEME_ATTRIBUTE = "data-theme";
 /** Fired on window after the theme changes, so toggles stay in sync. */
 export const THEME_CHANGE_EVENT = "klavyn:themechange";
-export const DARK_SCHEME_QUERY = "(prefers-color-scheme: dark)";
+/** The theme a first-time visitor sees; matches `color-scheme` on :root in globals.css. */
+export const DEFAULT_THEME: Theme = "light";
 
 /** Browser UI colour per theme; matches --bg in globals.css. */
 export const THEME_COLORS: Readonly<Record<Theme, string>> = {
@@ -24,9 +26,9 @@ export function parseTheme(value: unknown): Theme | null {
   return value === "light" || value === "dark" ? value : null;
 }
 
-/** The theme in effect: the saved choice, else the system preference. */
-export function resolveTheme(saved: Theme | null, systemPrefersDark: boolean): Theme {
-  return saved ?? (systemPrefersDark ? "dark" : "light");
+/** The theme in effect: the saved choice, else the default. */
+export function resolveTheme(saved: Theme | null): Theme {
+  return saved ?? DEFAULT_THEME;
 }
 
 /** The theme a toggle press switches to. */
@@ -36,7 +38,7 @@ export function nextTheme(current: Theme): Theme {
 
 /**
  * Inline script for <head> that applies a saved theme before first paint,
- * so a reader who chose light does not see a dark flash (or the reverse).
+ * so a reader who chose dark does not see a light flash.
  * Built only from the constants above; no user input reaches it.
  */
 export const themeInitScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(

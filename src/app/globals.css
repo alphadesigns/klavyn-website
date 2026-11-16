@@ -5,7 +5,7 @@
    themes. */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -89,8 +89,8 @@
     0 32px 64px -16px light-dark(rgba(18, 32, 29, 0.22), rgba(0, 0, 0, 0.7));
 }
 
-/* Theme: the system setting by default, or the header toggle's choice
-   (data-theme on <html>, see src/lib/theme.ts). Colour tokens above use
+/* Theme: light by default, or the header toggle's choice (data-theme on
+   <html>, see src/lib/theme.ts). The system setting is not consulted. Colour tokens above use
    light-dark(), which resolves against this color-scheme. */
 :root[data-theme="light"] {
   color-scheme: light;
@@ -370,16 +370,6 @@ pre {
 .theme-toggle__moon,
 :root[data-theme="dark"] .theme-toggle__sun {
   --on: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-toggle__moon {
-    --on: 1;
-  }
-
-  :root:not([data-theme="light"]) .theme-toggle__sun {
-    --on: 0;
-  }
 }
 
 /* With motion allowed, the incoming icon also grows and sharpens. */
