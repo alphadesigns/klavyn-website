@@ -20,8 +20,9 @@ import {
   ShieldIcon,
 } from "@/components/icons";
 import { JsonLd } from "@/components/JsonLd";
+import { PlatformStatus } from "@/components/PlatformStatus";
 import { SecretStory } from "@/components/SecretStory";
-import { STATUS_LABELS, availablePlatforms, listNames, platforms, releasesUrl } from "@/content/download";
+import { availablePlatforms, listNames, platforms, releasesUrl } from "@/content/download";
 import { faq } from "@/content/faq";
 import { selfHostCommands } from "@/content/self-host";
 import { faqJsonLd } from "@/lib/seo";
@@ -379,7 +380,7 @@ function Download() {
             <li key={platform.name} className="platform" data-status={platform.status}>
               <div className="platform__head">
                 <h3>{platform.name}</h3>
-                <span className="platform__status">{STATUS_LABELS[platform.status]}</span>
+                <PlatformStatus platform={platform} />
               </div>
               <p className="platform__file">{platform.file}</p>
               <ol className="platform__steps">

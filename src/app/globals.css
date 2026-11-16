@@ -1050,6 +1050,17 @@ pre {
   white-space: nowrap;
 }
 
+/* The "Download now" pill is a link to the releases page (PlatformStatus). */
+a.platform__status {
+  text-decoration: none;
+  transition: color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+
+.platform[data-status="available"] a.platform__status:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 .platform[data-status="available"] .platform__status {
   background: var(--accent-soft);
   color: var(--accent-soft-text);
