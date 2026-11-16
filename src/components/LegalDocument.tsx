@@ -1,3 +1,4 @@
+import { AlertIcon } from "@/components/icons";
 import type { Block, LegalDocument as Document, Span } from "@/lib/legal";
 
 /** One run of inline markup. Plain text is the common case. */
@@ -27,12 +28,15 @@ export function LegalDocument({ document }: { document: Document }) {
   return (
     <>
       {document.draft ? (
-        <p className="legal-draft" role="note">
-          <strong>This is a draft.</strong> Some details — the operator&rsquo;s
-          name, contact addresses and governing law — are still marked with
-          placeholders in square brackets and have not been filled in. The app
-          shows the same notice above the same text.
-        </p>
+        <div className="notice" role="note">
+          <AlertIcon />
+          <p>
+            <strong>This is a draft.</strong> Some details — the operator&rsquo;s
+            name, contact addresses and governing law — are still marked with
+            placeholders in square brackets and have not been filled in. The app
+            shows the same notice above the same text.
+          </p>
+        </div>
       ) : null}
       {document.blocks.map((block: Block, index) => {
         if (block.kind === "heading") {
