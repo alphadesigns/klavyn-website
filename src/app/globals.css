@@ -1681,12 +1681,14 @@ a.platform__status {
   margin-top: var(--space-2);
 }
 
-.prose a {
+/* Text links only. A button in an article keeps its own colours: this rule
+   outranks .btn--primary, and would paint its label the colour of its fill. */
+.prose a:not(.btn) {
   color: var(--accent);
   text-underline-offset: 3px;
 }
 
-.prose a:hover {
+.prose a:not(.btn):hover {
   color: var(--accent-hover);
 }
 
