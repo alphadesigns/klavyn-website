@@ -1,3 +1,4 @@
+import { Sentences } from "@/components/Sentences";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { PageToc } from "@/components/PageToc";
@@ -48,10 +49,7 @@ export default function SelfHostPage() {
           <Breadcrumb trail={[{ name: "Home", path: "/" }, { name: "Self-host", path: "/self-host" }]} />
           <span className="eyebrow">Self-hosting guide</span>
           <h1>Run your own {site.name} server</h1>
-          <p className="section-lede">
-            A small VPS, a domain name and Docker are all you need. Caddy handles
-            HTTPS, and the server itself is never exposed directly.
-          </p>
+          <Sentences className="section-lede" text="A small VPS, a domain name and Docker are all you need. Caddy handles HTTPS, and the server itself is never exposed directly." />
         </div>
       </section>
 
@@ -59,12 +57,16 @@ export default function SelfHostPage() {
         <article className="prose">
           <div className="notice" role="note">
             <AlertIcon />
-            <p>
-              <strong>{site.name} is pre-release.</strong> Storage formats can
-              change between builds and nothing is migrated. Run an app and a
-              server from the same release, and keep your current password
-              manager until a stable release.
-            </p>
+            <ul className="sentences">
+              <li>
+                <strong>{site.name} is pre-release.</strong>
+              </li>
+              <li>Storage formats can change between builds and nothing is migrated.</li>
+              <li>
+                Run an app and a server from the same release, and keep your
+                current password manager until a stable release.
+              </li>
+            </ul>
           </div>
 
           <h2 id="requirements">{SECTIONS.requirements}</h2>
@@ -76,10 +78,14 @@ export default function SelfHostPage() {
           </ul>
 
           <h2 id="deploy">{SECTIONS.deploy}</h2>
-          <p>
-            Clone the repository, fill in <code>.env</code>, and start the stack.
-            The health check should answer with <code>{`{"status":"ok"}`}</code>.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              Clone the repository, fill in <code>.env</code>, and start the stack.
+            </li>
+            <li>
+              The health check should answer with <code>{`{"status":"ok"}`}</code>.
+            </li>
+          </ul>
           <CodeBlock title="Deploy" copyText={selfHostCommands.copy}>
             {selfHostCommands.render}
           </CodeBlock>
@@ -95,13 +101,7 @@ export default function SelfHostPage() {
           </CodeBlock>
 
           <h2 id="accounts">{SECTIONS.accounts}</h2>
-          <p>
-            Who can create an account is one of three states: anyone with a
-            token, anyone who can reach the server, or nobody new. As shipped,
-            the token is blank, which means open. That’s fine on your own
-            machine; on a public host, set a token or close registration on
-            purpose. Rotating the token doesn’t affect existing accounts.
-          </p>
+          <Sentences marked text="Who can create an account is one of three states: anyone with a token, anyone who can reach the server, or nobody new. As shipped, the token is blank, which means open. That’s fine on your own machine; on a public host, set a token or close registration on purpose. Rotating the token doesn’t affect existing accounts." />
           <dl className="options">
             {serverOptions.map(([flag, env, effect]) => (
               <div key={flag} className="options__item">
@@ -113,39 +113,48 @@ export default function SelfHostPage() {
               </div>
             ))}
           </dl>
-          <p>
-            The server prints its registration policy every time it starts, so
-            you can check what a host is running with{" "}
-            <code>docker compose logs klavyn | grep &quot;registration policy&quot;</code>.
-            Logins and registrations are rate-limited per client address out of
-            the box.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              The server prints its registration policy every time it starts,
+              so you can check what a host is running with{" "}
+              <code>docker compose logs klavyn | grep &quot;registration policy&quot;</code>.
+            </li>
+            <li>
+              Logins and registrations are rate-limited per client address out
+              of the box.
+            </li>
+          </ul>
 
           <h2 id="backups">{SECTIONS.backups}</h2>
-          <p>
-            There’s no password recovery and the server holds only
-            ciphertext, so the database is the single point of failure for every
-            vault on it. Run <code>deploy/backup.sh</code> from cron as root, and
-            copy the results somewhere off the machine.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              There’s no password recovery and the server holds only
+              ciphertext, so the database is the single point of failure for
+              every vault on it.
+            </li>
+            <li>
+              Run <code>deploy/backup.sh</code> from cron as root, and copy the
+              results somewhere off the machine.
+            </li>
+          </ul>
 
           <h2 id="upgrades">{SECTIONS.upgrades}</h2>
-          <p>
-            Migrations run at startup and can’t be undone, so always back up
-            first. Upgrade the server before the apps: each app checks what the
-            server supports before it sends anything.
-          </p>
+          <Sentences marked text="Migrations run at startup and can’t be undone, so always back up first. Upgrade the server before the apps: each app checks what the server supports before it sends anything." />
           <CodeBlock title="Upgrade" copyText={upgradeCommands.copy}>
             {upgradeCommands.render}
           </CodeBlock>
 
           <h2 id="source">{SECTIONS.source}</h2>
-          <p>
-            You’ll need <a href="https://rustup.rs">Rust</a>. On Linux,
-            Tauri also needs <code>libwebkit2gtk-4.1-dev</code>,{" "}
-            <code>libayatana-appindicator3-dev</code> and{" "}
-            <code>librsvg2-dev</code>.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              You’ll need <a href="https://rustup.rs">Rust</a>.
+            </li>
+            <li>
+              On Linux, Tauri also needs <code>libwebkit2gtk-4.1-dev</code>,{" "}
+              <code>libayatana-appindicator3-dev</code> and{" "}
+              <code>librsvg2-dev</code>.
+            </li>
+          </ul>
           <CodeBlock title="Build from source" copyText={buildFromSourceCommands.copy}>
             {buildFromSourceCommands.render}
           </CodeBlock>
@@ -156,11 +165,7 @@ export default function SelfHostPage() {
             <li>Enter your email and a passphrase of at least 12 characters, plus the registration token if your server uses one. The app shows the token field only when the server asks for it.</li>
             <li>Select <strong>Create account</strong>. From then on, use <strong>Log in</strong>.</li>
           </ol>
-          <p>
-            Choose the server address carefully before inviting anyone. Logins
-            are bound to it, so moving to a new domain means creating accounts
-            again.
-          </p>
+          <Sentences marked text="Choose the server address carefully before inviting anyone. Logins are bound to it, so moving to a new domain means creating accounts again." />
 
           <div className="btn-row" style={{ marginTop: "var(--space-7)" }}>
             <a href={site.repoUrl} className="btn btn--primary">

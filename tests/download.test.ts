@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   STATUS_LABELS,
+  TESTFLIGHT_URL,
   availablePlatforms,
   listNames,
   platforms,
@@ -47,6 +48,20 @@ describe("platforms", () => {
     expect(availablePlatforms().map((p) => p.name)).toEqual(["macOS", "Android"]);
   });
 
+  it("offers iOS through its TestFlight invitation, not as an installer", () => {
+    const ios = platforms.find((p) => p.name === "iOS");
+    expect(ios?.status).toBe("testflight");
+    expect(ios?.link).toBe(TESTFLIGHT_URL);
+    expect(TESTFLIGHT_URL).toMatch(/^https:\/\/testflight\.apple\.com\/join\/[A-Za-z0-9]+$/);
+    expect(availablePlatforms().map((p) => p.name)).not.toContain("iOS");
+  });
+
+  it("gives every TestFlight platform somewhere to go", () => {
+    for (const p of platforms.filter((p) => p.status === "testflight")) {
+      expect(p.link, p.name).toBeTruthy();
+    }
+  });
+
   it("links to the release list, which includes pre-releases", () => {
     expect(releasesUrl).toBe(`${site.repoUrl}/releases`);
     expect(releasesUrl).not.toMatch(/\/latest$/);
@@ -70,11 +85,13 @@ describe("platformsAnswer", () => {
     const answer = platformsAnswer([
       platform("macOS", "available"),
       platform("Windows", "next-release"),
-      platform("iOS", "not-distributed"),
+      platform("iOS", "testflight"),
+      platform("visionOS", "not-distributed"),
     ]);
     expect(answer).toContain("Installers for macOS are on the releases page today.");
     expect(answer).toContain("Windows builds come with the next release.");
-    expect(answer).toContain("iOS isn’t distributed yet");
+    expect(answer).toContain("iOS is in beta on TestFlight");
+    expect(answer).toContain("visionOS isn’t distributed yet");
   });
 
   it("drops sentences for empty groups instead of leaving gaps", () => {
@@ -82,6 +99,7 @@ describe("platformsAnswer", () => {
     expect(answer).toContain("Installers for macOS and Linux");
     expect(answer).not.toContain("next release");
     expect(answer).not.toContain("isn’t distributed");
+    expect(answer).not.toContain("TestFlight");
     expect(answer).not.toMatch(/\s{2,}/);
   });
 
@@ -92,6 +110,31 @@ describe("platformsAnswer", () => {
   it("is what the FAQ shows", () => {
     const item = faq.find((f) => f.question === "Which platforms does it run on?");
     expect(item?.answer).toBe(platformsAnswer());
+  });
+});
+
+describe("plain language", () => {
+  // The FAQ is read by people who are not developers. The names of the
+  // algorithms live on the security page and in the home page's "built on"
+  // list, not in answers a first-time visitor has to get through.
+  const JARGON = /Argon2id|AES-256|X25519|ciphertext|\bVPS\b|\bbinary\b|\bTLS\b|\bblob\b/i;
+
+  it("keeps the FAQ free of cryptography and hosting jargon", () => {
+    for (const { question, answer } of faq.filter((f) => f.answer !== platformsAnswer())) {
+      expect(question, question).not.toMatch(JARGON);
+      expect(answer, question).not.toMatch(JARGON);
+    }
+    expect(site.description).not.toMatch(JARGON);
+  });
+
+  it("opens with whether a non-technical person can use it", () => {
+    expect(faq[0].question).toBe("Do I need to be technical to use it?");
+    expect(faq[0].answer).toMatch(/^Not to use it\./);
+  });
+
+  it("asks each question once", () => {
+    const questions = faq.map((f) => f.question);
+    expect(new Set(questions).size).toBe(questions.length);
   });
 });
 

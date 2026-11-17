@@ -40,9 +40,10 @@ export const site = {
   title: "Klavyn · Self-hosted, end-to-end encrypted passwords",
   /** Under 160 characters for the same reason. */
   description:
-    "A password manager you run on your own server. Everything is encrypted on your device, so the server stores only ciphertext. Free and open source.",
+    "A password manager for you, your family or your team. Passwords are locked on your device, so even the server can’t read them. Free and open source.",
   url: normaliseSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
-  repoUrl: "https://github.com/cjaymoni/klavyn",  license: "MIT",
+  repoUrl: "https://github.com/alphadesigns/klavyn",
+  license: "MIT",
   version: "0.1.3",
   /** Brand evergreen, from the logo. */
   themeColor: logo.colors.evergreen,

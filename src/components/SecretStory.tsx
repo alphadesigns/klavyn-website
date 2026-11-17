@@ -1,5 +1,6 @@
 "use client";
 
+import { Sentences } from "@/components/Sentences";
 import { useEffect, useRef, useState } from "react";
 import { KeyIcon, LaptopIcon, LockIcon, ServerIcon } from "@/components/icons";
 import { scrambleFrame } from "@/lib/scramble";
@@ -7,8 +8,8 @@ import { scrambleFrame } from "@/lib/scramble";
 /** Same length as the ciphertext, so the scramble sweeps evenly. */
 const PLAINTEXT = "correct-horse-battery-staple";
 const CIPHERTEXT = "q8Zt1v0Xa9LmR2cB7yJpE4kWfN6s";
-/** Stored readable so lists and invites can show it; matches the hero mock. */
-const SECRET_NAME = "GitHub";
+/** Stored readable so lists and invites can show it; matches MOCK_SECRET_NAME in page.tsx. */
+const SECRET_NAME = "Streaming";
 const SCRAMBLE_MS = 700;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 /**
@@ -19,24 +20,24 @@ const ACTIVE_BAND = "-65% 0px -30% 0px";
 
 const STEPS = [
   {
-    title: "It starts with a secret",
+    title: "It starts with a password",
     body: "You save a password in the app. Right now it exists in exactly one place: the screen in front of you.",
   },
   {
     title: "Your passphrase becomes a key",
-    body: "Argon2id stretches your passphrase into an encryption key, on your device. The passphrase itself is never sent anywhere.",
+    body: "Your device turns your passphrase into a key that only it holds. The passphrase itself is never sent anywhere.",
   },
   {
-    title: "The secret is sealed before it leaves",
-    body: "Each secret gets its own AES-256-GCM key. Username, password, notes and custom fields are encrypted together.",
+    title: "The password is locked before it leaves",
+    body: "Each saved password gets its own key. The username, password, notes and custom fields are scrambled together, so they are unreadable without it.",
   },
   {
-    title: "Only ciphertext crosses the wire",
-    body: "What travels to your server is the secret’s name and random-looking bytes. Strip away TLS and the name is all anyone could read.",
+    title: "Only scrambled data travels",
+    body: "What goes to the server is the name you gave the password and data that looks random. Even without the secure connection around it, the name is all anyone could read.",
   },
   {
     title: "The server keeps what it can’t open",
-    body: "Your server stores the blob and a name for it. Breach it, and an attacker walks away with ciphertext and no keys.",
+    body: "The server stores the scrambled data and a name for it. If someone breaks in, they leave with data they can’t read and no keys.",
   },
 ] as const;
 
@@ -101,15 +102,15 @@ export function SecretStory() {
   const on = (step: number) => active >= step;
 
   return (
-    <section className="section story" aria-labelledby="story-title">
+    <section id="how-it-works" className="section story" aria-labelledby="story-title">
       <div className="container">
         <div className="section-head">
           <span className="eyebrow">How it works</span>
           <h2 id="story-title" className="section-title">
-            The life of a secret
+            What happens when you save a password
           </h2>
           <p className="section-lede">
-            Follow one password from your keyboard to your server, and see why
+            Follow one password from your keyboard to the server, and see why
             the server never learns what it is.
           </p>
         </div>
@@ -137,27 +138,27 @@ export function SecretStory() {
               </div>
               <div className="story__chips">
                 <span className="story__chip" data-on={on(1)}>
-                  <KeyIcon /> Argon2id key · 7F3A 91C2
+                  <KeyIcon /> Your key · 7F3A 91C2
                 </span>
                 <span className="story__chip story__chip--seal" data-on={on(2)}>
-                  <LockIcon /> AES-256-GCM
+                  <LockIcon /> Locked
                 </span>
               </div>
             </div>
 
             <div className="story__wire" data-on={on(3)}>
               <span className="story__packet" data-arrived={on(4)} />
-              <span className="story__wire-label">TLS → your server</span>
+              <span className="story__wire-label">Secure connection → server</span>
             </div>
 
             <div className="story__card story__card--server" data-on={on(4)}>
               <div className="story__card-head">
-                <ServerIcon /> Your server
+                <ServerIcon /> The server
               </div>
               <div className="story__field">
                 <span className="story__label">Stored</span>
                 <span className="story__value story__value--stored">
-                  {on(4) ? `name: "${SECRET_NAME}", blob: "${CIPHERTEXT}…"` : "waiting for data…"}
+                  {on(4) ? `name: "${SECRET_NAME}", contents: "${CIPHERTEXT}…"` : "waiting for data…"}
                 </span>
               </div>
               <span className="story__verdict" data-on={on(4)}>
@@ -177,7 +178,7 @@ export function SecretStory() {
               >
                 <span className="story__step-num">{String(i + 1).padStart(2, "0")}</span>
                 <h3>{step.title}</h3>
-                <p>{step.body}</p>
+                <Sentences text={step.body} />
               </li>
             ))}
           </ol>

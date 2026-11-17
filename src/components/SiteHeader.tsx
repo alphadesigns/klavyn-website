@@ -27,7 +27,7 @@ export function SiteHeader() {
           <ThemeToggle />
           <a href={site.repoUrl} className="btn btn--secondary btn--sm">
             <GithubIcon />
-            GitHub
+            <span className="site-header__repo-label">GitHub</span>
           </a>
         </nav>
       </div>

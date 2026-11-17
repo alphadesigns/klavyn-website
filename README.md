@@ -1,6 +1,6 @@
 # klavyn-web
 
-Marketing site for [Klavyn](https://github.com/cjaymoni/klavyn), the
+Marketing site for [Klavyn](https://github.com/alphadesigns/klavyn), the
 self-hosted, end-to-end encrypted password manager. Next.js 16 (App Router),
 fully static, no client-side analytics or third-party scripts.
 
@@ -60,7 +60,7 @@ on loopback only, and the firewall allows 80/443 from Cloudflare alone.
 
 ```sh
 # on the server, as root
-git clone https://github.com/cjaymoni/klavyn-website /srv/klavyn-website
+git clone https://github.com/alphadesigns/klavyn-website /srv/klavyn-website
 chown -R deploy:deploy /srv/klavyn-website
 
 # as deploy

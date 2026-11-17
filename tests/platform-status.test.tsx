@@ -1,10 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PlatformStatus } from "@/components/PlatformStatus";
-import { STATUS_LABELS, platforms, releasesUrl, type PlatformStatus as Status } from "@/content/download";
+import {
+  STATUS_LABELS,
+  TESTFLIGHT_URL,
+  platformLink,
+  platforms,
+  releasesUrl,
+  type PlatformStatus as Status,
+} from "@/content/download";
 
-const render = (name: string, status: Status) =>
-  renderToStaticMarkup(<PlatformStatus platform={{ name, status }} />);
+const render = (name: string, status: Status, link?: string) =>
+  renderToStaticMarkup(<PlatformStatus platform={{ name, status, link }} />);
 
 describe("PlatformStatus", () => {
   it("links an available platform's label to the releases page", () => {
@@ -16,6 +23,18 @@ describe("PlatformStatus", () => {
   it("names the platform in the link, so two download links read differently", () => {
     expect(render("macOS", "available")).toContain("for macOS");
     expect(render("Android", "available")).toContain("for Android");
+  });
+
+  it("links a TestFlight beta to its invitation, never to the releases page", () => {
+    const html = render("iOS", "testflight", TESTFLIGHT_URL);
+    expect(html).toContain(`<a href="${TESTFLIGHT_URL}"`);
+    expect(html).not.toContain(releasesUrl);
+    expect(html).toContain(STATUS_LABELS.testflight);
+    expect(html).toContain("for iOS");
+  });
+
+  it("shows a TestFlight beta with no invitation as plain text", () => {
+    expect(render("iOS", "testflight")).not.toContain("<a");
   });
 
   it("shows the other statuses as plain text, with nothing to click", () => {
@@ -30,8 +49,9 @@ describe("PlatformStatus", () => {
     expect(render("<b>", "available")).toContain("for &lt;b&gt;");
   });
 
-  it("gives a link to exactly the platforms the site lists as available", () => {
-    const linked = platforms.filter((p) => render(p.name, p.status).includes("<a")).map((p) => p.name);
-    expect(linked).toEqual(platforms.filter((p) => p.status === "available").map((p) => p.name));
+  it("gives a link to exactly the platforms that can be had today", () => {
+    const linked = platforms.filter((p) => render(p.name, p.status, p.link).includes("<a")).map((p) => p.name);
+    expect(linked).toEqual(platforms.filter((p) => platformLink(p) !== null).map((p) => p.name));
+    expect(linked).toEqual(["macOS", "Android", "iOS"]);
   });
 });

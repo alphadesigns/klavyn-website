@@ -1,3 +1,4 @@
+import { Sentences } from "@/components/Sentences";
 import Image from "next/image";
 import Link from "next/link";
 import { site } from "@/lib/site";
@@ -12,10 +13,7 @@ export function SiteFooter() {
               <Image src="/logo.svg" alt="" width={28} height={28} />
               {site.name}
             </Link>
-            <p>
-              The password manager you run yourself. End-to-end encrypted, free
-              and open source.
-            </p>
+            <Sentences text="The password manager you run yourself. End-to-end encrypted, free and open source." />
           </div>
           <nav aria-labelledby="footer-product">
             <h2 id="footer-product">Product</h2>

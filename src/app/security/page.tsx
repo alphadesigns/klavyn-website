@@ -1,7 +1,10 @@
+import { Sentences } from "@/components/Sentences";
 import Link from "next/link";
+import { AppFigure } from "@/components/AppShot";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { PageToc } from "@/components/PageToc";
 import { ArrowRightIcon } from "@/components/icons";
+import { fingerprintShot } from "@/content/screenshots";
 import { pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { tocFromSections } from "@/lib/toc";
@@ -62,11 +65,7 @@ export default function SecurityPage() {
           <Breadcrumb trail={[{ name: "Home", path: "/" }, { name: "Security", path: "/security" }]} />
           <span className="eyebrow">Security model</span>
           <h1>A server that stores your vault and can’t read it</h1>
-          <p className="section-lede">
-            {site.name} is designed so that whoever runs the server, including
-            you, never holds anything that could decrypt a password. Here is how,
-            and where the limits are.
-          </p>
+          <Sentences className="section-lede" text={`${site.name} is designed so that whoever runs the server, including you, never holds anything that could decrypt a password. Here is how, and where the limits are.`} />
         </div>
       </section>
 
@@ -79,43 +78,31 @@ export default function SecurityPage() {
                 <span className="layer__tag">{layer.tag}</span>
                 <div>
                   <h3>{layer.title}</h3>
-                  <p>{layer.body}</p>
+                  <Sentences text={layer.body} />
                 </div>
               </li>
             ))}
           </ol>
 
           <h2 id="names">{SECTIONS.names}</h2>
-          <p>
-            Only each secret’s <strong>name</strong> is stored in plaintext,
-            so lists and invites can display it. The name is authenticated as
-            associated data, so the server can’t present one secret’s
-            contents under another secret’s name.
-          </p>
-          <p>
-            The operator can also see who shares with whom. They can’t alter,
-            relabel or replace a secret you own.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              Only each secret’s <strong>name</strong> is stored in plaintext,
+              so lists and invites can display it.
+            </li>
+            <li>
+              The name is authenticated as associated data, so the server
+              can’t present one secret’s contents under another secret’s name.
+            </li>
+          </ul>
+          <Sentences marked text="The operator can also see who shares with whom. They can’t alter, relabel or replace a secret you own." />
 
           <h2 id="revoking">{SECTIONS.revoking}</h2>
-          <p>
-            When you remove someone, {site.name} generates a new key,
-            re-encrypts the secret and re-wraps it for everyone who still has
-            access. A revoked person who kept the old key can’t read anything
-            you change afterwards. Pending invites are cancelled too, because they
-            carried the old key.
-          </p>
-          <p>
-            Every rotation increments a key version. A device still holding an
-            old key gets a conflict instead of quietly writing under it.
-          </p>
+          <Sentences marked text={`When you remove someone, ${site.name} generates a new key, re-encrypts the secret and re-wraps it for everyone who still has access. A revoked person who kept the old key can’t read anything you change afterwards. Pending invites are cancelled too, because they carried the old key.`} />
+          <Sentences marked text="Every rotation increments a key version. A device still holding an old key gets a conflict instead of quietly writing under it." />
 
           <h2 id="fingerprints">{SECTIONS.fingerprints}</h2>
-          <p>
-            Public keys come from the server, so a compromised server could hand
-            you its own key instead of your friend’s. To close that gap, the
-            app shows a short fingerprint of every key:
-          </p>
+          <Sentences marked text="Public keys come from the server, so a compromised server could hand you its own key instead of your friend’s. To close that gap, the app shows a short fingerprint of every key:" />
           <ul>
             <li>Your own fingerprint is in the app header after you sign in.</li>
             <li>
@@ -135,27 +122,15 @@ export default function SecurityPage() {
             a wrong address and an unregistered address all get the same answer.
           </p>
 
+          <AppFigure item={fingerprintShot} sizes="240px" className="prose-shot" />
+
+
           <h2 id="google">{SECTIONS.google}</h2>
-          <p>
-            Operators can enable Sign in with Google. Google proves who you are,
-            but it can’t produce key material: you still enter your master
-            password, and the vault key is still derived from it on your device.
-          </p>
-          <p>
-            The cost: someone who takes over your Google account can reach the
-            server as you and see secret names, sharing and ciphertext. They
-            still can’t read a single secret. It’s off unless the operator
-            turns it on.
-          </p>
+          <Sentences marked text="Operators can enable Sign in with Google. Google proves who you are, but it can’t produce key material: you still enter your master password, and the vault key is still derived from it on your device." />
+          <Sentences marked text="The cost: someone who takes over your Google account can reach the server as you and see secret names, sharing and ciphertext. They still can’t read a single secret. It’s off unless the operator turns it on." />
 
           <h2 id="versions">{SECTIONS.versions}</h2>
-          <p>
-            The protocol, the encryption scheme and the field layout each carry a
-            version number. A build reads its own formats and refuses the rest by
-            name, so it can’t be walked back to a weaker scheme, and it
-            won’t silently drop a field it doesn’t recognise and save the
-            secret back.
-          </p>
+          <Sentences marked text="The protocol, the encryption scheme and the field layout each carry a version number. A build reads its own formats and refuses the rest by name, so it can’t be walked back to a weaker scheme, and it won’t silently drop a field it doesn’t recognise and save the secret back." />
 
           <h2 id="limits">{SECTIONS.limits}</h2>
           <ul>
@@ -180,11 +155,13 @@ export default function SecurityPage() {
               ones, and you can’t write to it, so nothing leaks.
             </li>
           </ul>
-          <p>
-            The full design, including every edge case, is in the{" "}
-            <a href={`${site.repoUrl}#how-the-security-works`}>project README</a>.
-            The code is open for review.
-          </p>
+          <ul className="sentences sentences--marked">
+            <li>
+              The full design, including every edge case, is in the{" "}
+              <a href={`${site.repoUrl}#how-the-security-works`}>project README</a>.
+            </li>
+            <li>The code is open for review.</li>
+          </ul>
 
           <div className="btn-row" style={{ marginTop: "var(--space-7)" }}>
             <Link href="/self-host" className="btn btn--primary">
