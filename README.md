@@ -7,9 +7,10 @@ fully static, no third-party scripts.
 Analytics are cookieless and first-party: a small script of our own counts
 page views and download clicks and sends them to PostHog's EU host. No
 personal data is collected. The only identifier is a random id made for each
-page load and never stored (no cookies, no local or session storage); URLs are
-sent without their query string or fragment, and referrers as their origin
-only. Visitors with Do Not Track or Global Privacy Control on are not counted
+page load, never stored (no cookies, no local or session storage) and
+forgotten when the visitor leaves the page; URLs are sent without their query
+string or fragment, referrers as their domain only, and requests carry no
+cookies or Referer header. Visitors with Do Not Track or Global Privacy Control on are not counted
 at all, and with `NEXT_PUBLIC_POSTHOG_KEY` unset nothing is sent. The code is
 `src/lib/analytics.ts` and `src/components/Analytics.tsx`.
 
@@ -67,20 +68,36 @@ The site runs as a Next server behind the nginx already on the host, in the
 same shape as the API: TLS is a Cloudflare Origin Certificate, the app listens
 on loopback only, and the firewall allows 80/443 from Cloudflare alone.
 
+**Before setting `NEXT_PUBLIC_POSTHOG_KEY`**, turn on "Discard client IP
+data" in that PostHog project's settings, and check that it is on. Visitors'
+browsers send the counts to PostHog directly, so PostHog sees their IP
+address, and the privacy policy says it is discarded. The setting is per
+project; if the klavyn server's app telemetry uses the same project, that is
+fine, because the server already sends no client IP. Leave the key out of
+`.env` and the site sends nothing at all.
+
+**Do not deploy the analytics change until the klavyn repository's telemetry
+branch is merged and its server deployed.** The synced privacy policy
+describes behaviour that only that branch has.
+
 ```sh
 # on the server, as root
 git clone https://github.com/alphadesigns/klavyn-website /srv/klavyn-website
 chown -R deploy:deploy /srv/klavyn-website
 
-# as deploy
+# as deploy -- both values are inlined at build time, so .env is written first
 cd /srv/klavyn-website
-printf 'NEXT_PUBLIC_SITE_URL=https://klavyn.com\n' > .env
+printf 'NEXT_PUBLIC_SITE_URL=https://klavyn.com\nNEXT_PUBLIC_POSTHOG_KEY=phc_...\n' > .env
 npm ci && npm run build
 
 # as root
 cp deploy/klavyn-web.service /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now klavyn-web
 ```
+
+If nginx (or anything else in front) sets a Content-Security-Policy for the
+site, its `connect-src` must allow `https://eu.i.posthog.com`, or the browser
+blocks every count. The repository sets none itself.
 
 Then point the apex and `www` server blocks at `127.0.0.1:3100` instead of a
 static root, and `nginx -t` before reloading — that host serves other sites,

@@ -6,36 +6,46 @@ import {
   CAPTURE_URL,
   DOWNLOAD_PLATFORM_ATTRIBUTE,
   buildPayload,
+  createPageCounter,
   createTracker,
   downloadPlatformOf,
   isTrackingAllowed,
+  nextPageview,
   pageviewProperties,
   parseProjectKey,
-  referrerOrigin,
+  referringDomain,
+  restoredPageview,
   sendPayload,
   stripPageUrl,
   type CapturePayload,
+  type PageLocation,
   type PrivacySignals,
+  type Tracker,
   type TrackerOptions,
 } from "@/lib/analytics";
 
 const KEY = "phc_test_key";
 const ID = "00000000-0000-4000-8000-000000000000";
+const ORIGIN = "https://klavyn.com";
 
-/** A tracker over a recording transport, with every option overridable. */
+type FetchMock = (url: string, init: RequestInit) => Promise<void>;
+
+/** A tracker over a recording fetch, with every option overridable. */
 function setup(overrides: Partial<TrackerOptions> = {}) {
-  const sendBeacon = vi.fn<(url: string, body: string) => boolean>(() => true);
-  const fetch = vi.fn<(url: string, init: RequestInit) => Promise<void>>(() => Promise.resolve());
-  const tracker = createTracker({
-    apiKey: KEY,
-    signals: {},
-    transport: { sendBeacon, fetch },
-    randomUUID: () => ID,
-    ...overrides,
-  });
-  const sent = (): CapturePayload[] => sendBeacon.mock.calls.map(([, body]) => JSON.parse(body));
-  return { tracker, sendBeacon, fetch, sent };
+  const fetch = vi.fn<FetchMock>(() => Promise.resolve());
+  const tracker = createTracker({ apiKey: KEY, signals: {}, fetch, randomUUID: () => ID, ...overrides });
+  const sent = (): CapturePayload[] => fetch.mock.calls.map(([, init]) => JSON.parse(String(init.body)));
+  return { tracker, fetch, sent };
 }
+
+/** A click target inside a link marked with `platform`. */
+const link = (platform: string) => ({ closest: () => ({ getAttribute: () => platform }) });
+
+const at = (pathname: string, query = ""): PageLocation => ({
+  href: `${ORIGIN}${pathname}${query}`,
+  pathname,
+  origin: ORIGIN,
+});
 
 describe("stripPageUrl", () => {
   it("keeps origin and path and drops the query string and fragment", () => {
@@ -59,16 +69,44 @@ describe("stripPageUrl", () => {
   });
 });
 
-describe("referrerOrigin", () => {
-  it("reduces a referrer to its origin", () => {
-    expect(referrerOrigin("https://news.example.org/item?id=42#top")).toBe("https://news.example.org");
-    expect(referrerOrigin("http://localhost:3000/a/b")).toBe("http://localhost:3000");
+describe("referringDomain", () => {
+  it("reduces a referrer to its domain alone, without scheme, port, path or query", () => {
+    expect(referringDomain("https://news.example.org/item?id=42#top")).toBe("news.example.org");
+    expect(referringDomain("http://localhost:3000/a/b")).toBe("localhost");
+    expect(referringDomain("https://user:pass@mail.example.com:8443/inbox")).toBe("mail.example.com");
   });
 
   it("is null for no referrer or a non-web one", () => {
     for (const value of ["", "garbage", "android-app://com.example/", "about:blank"]) {
-      expect(referrerOrigin(value), value).toBeNull();
+      expect(referringDomain(value), value).toBeNull();
     }
+  });
+});
+
+describe("pageviewProperties", () => {
+  it("sends the stripped URL, its host and path, and the referrer's domain", () => {
+    expect(
+      pageviewProperties({ href: "https://klavyn.com/security?a=1#b", referrer: "https://search.example/?q=klavyn" }),
+    ).toEqual({
+      $current_url: "https://klavyn.com/security",
+      $host: "klavyn.com",
+      $pathname: "/security",
+      $referring_domain: "search.example",
+    });
+  });
+
+  it("sends a null referring domain when there is no referrer", () => {
+    expect(pageviewProperties({ href: "https://klavyn.com/", referrer: "" })?.$referring_domain).toBeNull();
+  });
+
+  it("never sends the full referrer", () => {
+    const properties = pageviewProperties({ href: "https://klavyn.com/", referrer: "https://a.example/secret" });
+    expect(properties).not.toHaveProperty("$referrer");
+    expect(JSON.stringify(properties)).not.toContain("secret");
+  });
+
+  it("is null for a page URL that is not http(s)", () => {
+    expect(pageviewProperties({ href: "about:blank", referrer: "" })).toBeNull();
   });
 });
 
@@ -115,15 +153,6 @@ describe("buildPayload", () => {
   });
 });
 
-describe("pageviewProperties", () => {
-  it("sends only the stripped URL and the referrer's origin", () => {
-    expect(pageviewProperties("https://klavyn.com/security?a=1#b", "https://search.example/?q=klavyn")).toEqual({
-      $current_url: "https://klavyn.com/security",
-      $referrer: "https://search.example",
-    });
-  });
-});
-
 describe("downloadPlatformOf", () => {
   const element = (platform: string | null) => ({
     closest: (selector: string) => {
@@ -133,7 +162,7 @@ describe("downloadPlatformOf", () => {
   });
 
   it("reads the platform from the nearest marked link", () => {
-    expect(downloadPlatformOf(element("macOS"))).toBe("macOS");
+    expect(downloadPlatformOf(element("macos"))).toBe("macos");
     expect(downloadPlatformOf(element(ALL_PLATFORMS))).toBe("all");
   });
 
@@ -152,34 +181,61 @@ describe("downloadPlatformOf", () => {
   });
 });
 
+describe("nextPageview", () => {
+  const view = (last: string | null, path: string) =>
+    nextPageview(last, path, `${ORIGIN}${path}?q=1`, "https://ref.example/page", ORIGIN);
+
+  it("uses document.referrer for the first view of the page load", () => {
+    expect(view(null, "/")).toEqual({ href: `${ORIGIN}/?q=1`, referrer: "https://ref.example/page" });
+  });
+
+  it("names this site as the referrer of a later, client-side view", () => {
+    expect(view("/", "/security")).toEqual({ href: `${ORIGIN}/security?q=1`, referrer: ORIGIN });
+  });
+
+  it("does not count the same path twice in a row", () => {
+    expect(view("/security", "/security")).toBeNull();
+  });
+});
+
+describe("restoredPageview", () => {
+  it("counts a page restored from the back-forward cache, with no referrer", () => {
+    expect(restoredPageview(true, `${ORIGIN}/terms`)).toEqual({ href: `${ORIGIN}/terms`, referrer: "" });
+  });
+
+  it("leaves an ordinary load to the route change", () => {
+    expect(restoredPageview(false, `${ORIGIN}/terms`)).toBeNull();
+  });
+});
+
 describe("sendPayload", () => {
   const payload = buildPayload(KEY, ID, "$pageview", {});
 
-  it("uses sendBeacon when the browser queues it", () => {
-    const fetch = vi.fn(() => Promise.resolve());
-    const sendBeacon = vi.fn(() => true);
-    sendPayload(payload, { sendBeacon, fetch });
-    expect(sendBeacon).toHaveBeenCalledWith(CAPTURE_URL, JSON.stringify(payload));
-    expect(fetch).not.toHaveBeenCalled();
+  it("sends with fetch, without credentials or a Referer, and surviving the page closing", () => {
+    const fetch = vi.fn<FetchMock>(() => Promise.resolve());
+    sendPayload(payload, fetch);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe(CAPTURE_URL);
+    expect(init).toEqual({
+      method: "POST",
+      body: JSON.stringify(payload),
+      keepalive: true,
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+    });
   });
 
-  it("falls back to a credential-less keepalive fetch", () => {
-    for (const sendBeacon of [undefined, vi.fn(() => false)]) {
-      const fetch = vi.fn<(url: string, init: RequestInit) => Promise<void>>(() => Promise.resolve());
-      sendPayload(payload, { sendBeacon, fetch });
-      expect(fetch).toHaveBeenCalledWith(CAPTURE_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        keepalive: true,
-        credentials: "omit",
-      });
-    }
+  it("never uses sendBeacon, which always sends credentials", () => {
+    const source = fs.readFileSync(path.join(__dirname, "../src/lib/analytics.ts"), "utf8");
+    const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+    expect(code).not.toMatch(/sendBeacon/);
   });
 
-  it("reports a failed fetch instead of throwing into the page", async () => {
+  it("reports a failed send instead of throwing into the page", async () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
     const failure = new Error("blocked");
-    sendPayload(payload, { fetch: () => Promise.reject(failure) });
+    sendPayload(payload, () => Promise.reject(failure));
     await vi.waitFor(() => expect(debug).toHaveBeenCalledWith("analytics: sending $pageview failed", failure));
     debug.mockRestore();
   });
@@ -192,9 +248,8 @@ describe("sendPayload", () => {
 describe("createTracker", () => {
   it("sends nothing at all without a project key", () => {
     for (const apiKey of [undefined, "", "  "]) {
-      const { tracker, sendBeacon, fetch } = setup({ apiKey });
+      const { tracker, fetch } = setup({ apiKey });
       expect(tracker).toBeNull();
-      expect(sendBeacon).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
     }
   });
@@ -202,9 +257,8 @@ describe("createTracker", () => {
   it("sends nothing at all under Do Not Track or Global Privacy Control", () => {
     const refusals: PrivacySignals[] = [{ doNotTrack: "1" }, { globalPrivacyControl: true }];
     for (const signals of refusals) {
-      const { tracker, sendBeacon, fetch } = setup({ signals });
+      const { tracker, fetch } = setup({ signals });
       expect(tracker).toBeNull();
-      expect(sendBeacon).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
     }
   });
@@ -215,7 +269,7 @@ describe("createTracker", () => {
 
   it("sends a stripped page view", () => {
     const { tracker, sent } = setup();
-    tracker!.pageview("https://klavyn.com/terms?ref=mail#s2", "https://mail.example.com/inbox/123");
+    tracker!.pageview({ href: "https://klavyn.com/terms?ref=mail#s2", referrer: "https://mail.example.com/inbox/123" });
     expect(sent()).toEqual([
       {
         api_key: KEY,
@@ -223,7 +277,9 @@ describe("createTracker", () => {
         distinct_id: ID,
         properties: {
           $current_url: "https://klavyn.com/terms",
-          $referrer: "https://mail.example.com",
+          $host: "klavyn.com",
+          $pathname: "/terms",
+          $referring_domain: "mail.example.com",
           $process_person_profile: false,
         },
       },
@@ -231,36 +287,128 @@ describe("createTracker", () => {
   });
 
   it("skips a page view whose URL cannot be reduced", () => {
-    const { tracker, sendBeacon } = setup();
-    tracker!.pageview("about:blank", "");
-    expect(sendBeacon).not.toHaveBeenCalled();
+    const { tracker, fetch } = setup();
+    tracker!.pageview({ href: "about:blank", referrer: "" });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("sends a download click with only its platform", () => {
     const { tracker, sent } = setup();
-    tracker!.downloadClicked("Android");
+    tracker!.downloadClicked("android");
     expect(sent()).toEqual([
       {
         api_key: KEY,
         event: "download_clicked",
         distinct_id: ID,
-        properties: { platform: "Android", $process_person_profile: false },
+        properties: { platform: "android", $process_person_profile: false },
       },
     ]);
   });
 
-  it("uses one id for every event of a page load and a new one for the next load", () => {
-    const ids = ["first-load", "second-load"];
-    const randomUUID = vi.fn(() => ids.shift()!);
-    const first = setup({ randomUUID });
-    first.tracker!.pageview("https://klavyn.com/", "");
-    first.tracker!.downloadClicked("macOS");
-    expect(first.sent().map((p) => p.distinct_id)).toEqual(["first-load", "first-load"]);
+  it("makes its id once and uses it for every event", () => {
+    const randomUUID = vi.fn(() => ID);
+    const { tracker, sent } = setup({ randomUUID });
+    tracker!.pageview({ href: "https://klavyn.com/", referrer: "" });
+    tracker!.downloadClicked("macos");
+    expect(sent().map((p) => p.distinct_id)).toEqual([ID, ID]);
+    expect(randomUUID).toHaveBeenCalledTimes(1);
+  });
+});
 
-    const second = setup({ randomUUID });
-    second.tracker!.pageview("https://klavyn.com/", "");
-    expect(second.sent()[0].distinct_id).toBe("second-load");
-    expect(randomUUID).toHaveBeenCalledTimes(2);
+describe("createPageCounter", () => {
+  /** A counter whose trackers record what they were asked, each with its own id. */
+  function counterSetup() {
+    const events: { id: string; event: string; detail: unknown }[] = [];
+    let made = 0;
+    const makeTracker = vi.fn((): Tracker => {
+      const id = `load-${++made}`;
+      return {
+        pageview: (view) => events.push({ id, event: "pageview", detail: view }),
+        downloadClicked: (platform) => events.push({ id, event: "download", detail: platform }),
+      };
+    });
+    return { counter: createPageCounter(makeTracker), makeTracker, events };
+  }
+
+  it("counts the first view with the document's referrer and later views with the site's origin", () => {
+    const { counter, events } = counterSetup();
+    counter.routeChanged(at("/"), "https://ref.example/page");
+    counter.routeChanged(at("/security"), "https://ref.example/page");
+    expect(events.map((e) => e.detail)).toEqual([
+      { href: `${ORIGIN}/`, referrer: "https://ref.example/page" },
+      { href: `${ORIGIN}/security`, referrer: ORIGIN },
+    ]);
+  });
+
+  it("counts a path once when the route effect runs twice", () => {
+    const { counter, events } = counterSetup();
+    counter.routeChanged(at("/"), "");
+    counter.routeChanged(at("/"), "");
+    expect(events).toHaveLength(1);
+  });
+
+  it("does not make a tracker before there is anything to count", () => {
+    const { counter, makeTracker } = counterSetup();
+    counter.clicked({ closest: () => null });
+    counter.pageShown(false, at("/"));
+    expect(makeTracker).not.toHaveBeenCalled();
+  });
+
+  it("uses one id for the whole page load", () => {
+    const { counter, events, makeTracker } = counterSetup();
+    counter.routeChanged(at("/"), "");
+    counter.clicked(link("macos"));
+    counter.routeChanged(at("/self-host"), "");
+    expect(events.map((e) => e.id)).toEqual(["load-1", "load-1", "load-1"]);
+    expect(makeTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets the id on leaving and counts a fresh view under a new id when restored with Back", () => {
+    const { counter, events } = counterSetup();
+    counter.routeChanged(at("/"), "");
+    counter.pageHidden();
+    counter.pageShown(true, at("/", "?q=1"));
+    expect(events).toEqual([
+      { id: "load-1", event: "pageview", detail: { href: `${ORIGIN}/`, referrer: "" } },
+      { id: "load-2", event: "pageview", detail: { href: `${ORIGIN}/?q=1`, referrer: "" } },
+    ]);
+  });
+
+  it("counts a later client-side navigation after a restore as referred by the site", () => {
+    const { counter, events } = counterSetup();
+    counter.routeChanged(at("/"), "https://ref.example/");
+    counter.pageHidden();
+    counter.pageShown(true, at("/"));
+    counter.routeChanged(at("/terms"), "https://ref.example/");
+    expect(events.at(-1)).toEqual({ id: "load-2", event: "pageview", detail: { href: `${ORIGIN}/terms`, referrer: ORIGIN } });
+  });
+
+  it("counts a click on a download link and ignores any other click", () => {
+    const { counter, events } = counterSetup();
+    counter.clicked(link("ios"));
+    counter.clicked({ closest: () => null });
+    expect(events).toEqual([{ id: "load-1", event: "download", detail: "ios" }]);
+  });
+
+  it("does nothing when counting is off, and asks again after leaving", () => {
+    const makeTracker = vi.fn(() => null);
+    const counter = createPageCounter(makeTracker);
+    counter.routeChanged(at("/"), "");
+    counter.clicked(link("macos"));
+    expect(makeTracker).toHaveBeenCalledTimes(1);
+    counter.pageHidden();
+    counter.pageShown(true, at("/"));
+    expect(makeTracker).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends nothing end to end without a key", () => {
+    const fetch = vi.fn<FetchMock>(() => Promise.resolve());
+    const counter = createPageCounter(() =>
+      createTracker({ apiKey: undefined, signals: {}, fetch, randomUUID: () => ID }),
+    );
+    counter.routeChanged(at("/"), "");
+    counter.clicked(link("macos"));
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 
@@ -293,10 +441,13 @@ describe("storage", () => {
       vi.stubGlobal("sessionStorage", sessionStorage);
       vi.stubGlobal("indexedDB", indexedDB);
 
-      const { tracker, sendBeacon } = setup();
-      tracker!.pageview("https://klavyn.com/", "https://example.com/");
-      tracker!.downloadClicked("macOS");
-      expect(sendBeacon).toHaveBeenCalledTimes(2);
+      const { tracker, fetch } = setup();
+      const counter = createPageCounter(() => tracker);
+      counter.routeChanged(at("/"), "https://example.com/");
+      counter.clicked(link("macos"));
+      counter.pageHidden();
+      counter.pageShown(true, at("/"));
+      expect(fetch).toHaveBeenCalledTimes(3);
 
       expect(cookie.get).not.toHaveBeenCalled();
       expect(cookie.set).not.toHaveBeenCalled();

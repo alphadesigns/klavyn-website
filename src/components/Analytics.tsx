@@ -1,30 +1,22 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { createTracker, downloadPlatformOf, type PrivacySignals, type Tracker } from "@/lib/analytics";
+import { useEffect } from "react";
+import { createPageCounter, createTracker, type PrivacySignals } from "@/lib/analytics";
 
 /**
- * Created on first use and kept for the life of the page load, so every
- * event from one load shares one random id and a reload gets a new one.
- * `undefined` means not created yet; `null` means counting is off.
+ * One counter for the life of the document. It decides everything (what to
+ * count, when to forget the id); this module only feeds it browser events.
  */
-let tracker: Tracker | null | undefined;
-
-function getTracker(): Tracker | null {
-  if (tracker !== undefined) return tracker;
-  tracker = createTracker({
+const counter = createPageCounter(() =>
+  createTracker({
     // Inlined at build time; unset means the site sends nothing.
     apiKey: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     signals: navigator as Navigator & PrivacySignals,
-    transport: {
-      sendBeacon: (url, body) => navigator.sendBeacon(url, body),
-      fetch: (url, init) => fetch(url, init),
-    },
+    fetch: (url, init) => fetch(url, init),
     randomUUID: typeof crypto.randomUUID === "function" ? () => crypto.randomUUID() : undefined,
-  });
-  return tracker;
-}
+  }),
+);
 
 /**
  * Counts page views and download clicks. Mounted once in the root layout;
@@ -32,31 +24,25 @@ function getTracker(): Tracker | null {
  */
 export function Analytics() {
   const pathname = usePathname();
-  // The path last counted, so React's development double-run of effects
-  // does not count one view twice.
-  const countedPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    const active = getTracker();
-    if (active === null || countedPathname.current === pathname) return;
-    const isFirstView = countedPathname.current === null;
-    countedPathname.current = pathname;
-    // document.referrer never changes after the first load, so a client-side
-    // navigation names this site as the referrer rather than repeating it.
-    active.pageview(window.location.href, isFirstView ? document.referrer : window.location.origin);
+    counter.routeChanged(window.location, document.referrer);
   }, [pathname]);
 
   useEffect(() => {
-    const active = getTracker();
-    if (active === null) return;
-    const countDownloadClick = (event: MouseEvent) => {
-      const platform = downloadPlatformOf(event.target);
-      if (platform !== null) active.downloadClicked(platform);
-    };
+    const onClick = (event: MouseEvent) => counter.clicked(event.target);
+    const onPageHide = () => counter.pageHidden();
+    const onPageShow = (event: PageTransitionEvent) => counter.pageShown(event.persisted, window.location);
     // Capture phase and passive: sees every click first, and can never
     // delay or cancel the link's own navigation.
-    document.addEventListener("click", countDownloadClick, { capture: true, passive: true });
-    return () => document.removeEventListener("click", countDownloadClick, { capture: true });
+    document.addEventListener("click", onClick, { capture: true, passive: true });
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("click", onClick, { capture: true });
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, []);
 
   return null;

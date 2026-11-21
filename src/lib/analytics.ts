@@ -3,17 +3,23 @@
  *
  * Nothing here identifies a visitor. Each page load gets a random id that is
  * held in memory only and never written anywhere (no cookies, no web
- * storage, no IndexedDB), so two visits cannot be linked. URLs are reduced to
- * origin and path before they leave the browser, a referrer to its origin,
- * and PostHog is told not to build a person profile. A visitor who sends Do
- * Not Track or Global Privacy Control is not counted at all, and with no
- * project key configured nothing is ever sent.
+ * storage, no IndexedDB), and is forgotten when the visitor leaves the page,
+ * so two visits cannot be linked. URLs are reduced to origin and path before
+ * they leave the browser, a referrer to its domain, requests carry no
+ * credentials and no Referer header, and PostHog is told not to build a
+ * person profile. A visitor who sends Do Not Track or Global Privacy Control
+ * is not counted at all, and with no project key configured nothing is ever
+ * sent.
  *
  * Everything that decides what is sent lives here as plain functions; the
  * component in src/components/Analytics.tsx only wires them to the browser.
  */
 
-/** PostHog's EU ingestion host. Kept separate so the CSP and docs can name it. */
+/**
+ * PostHog's EU ingestion host. The browser connects to it directly, so a
+ * Content-Security-Policy on the host serving this site must allow
+ * `connect-src https://eu.i.posthog.com`.
+ */
 export const POSTHOG_HOST = "https://eu.i.posthog.com";
 
 /** PostHog's single-event capture endpoint. */
@@ -22,7 +28,7 @@ export const CAPTURE_URL = `${POSTHOG_HOST}/i/v0/e/`;
 export const PAGEVIEW_EVENT = "$pageview";
 export const DOWNLOAD_CLICKED_EVENT = "download_clicked";
 
-/** Put on a download link, naming its platform, to count clicks on it. */
+/** Put on a download link, naming its platform id, to count clicks on it. */
 export const DOWNLOAD_PLATFORM_ATTRIBUTE = "data-download-platform";
 
 /** The platform value for a link to the releases page as a whole. */
@@ -37,28 +43,32 @@ export type PrivacySignals = {
   globalPrivacyControl?: boolean;
 };
 
-/** How a payload leaves the browser: `navigator.sendBeacon`, with `fetch` as the fallback. */
-export type Transport = {
-  sendBeacon?: (url: string, body: string) => boolean;
-  fetch?: (url: string, init: RequestInit) => Promise<unknown>;
-};
+/**
+ * How a payload leaves the browser. Only `fetch`: `navigator.sendBeacon`
+ * always sends credentials, so it would carry any cookies the browser holds
+ * for posthog.com.
+ */
+export type Fetch = (url: string, init: RequestInit) => Promise<unknown>;
+
+/** A property value PostHog receives from this site. */
+type PropertyValue = string | null;
 
 /** One event in the shape PostHog's capture endpoint accepts. */
 export type CapturePayload = {
   api_key: string;
   event: string;
   distinct_id: string;
-  properties: { [name: string]: string | null | false; $process_person_profile: false };
+  properties: { [name: string]: PropertyValue | false; $process_person_profile: false };
 };
+
+/** A page view, before reduction: the full URL and the full referrer ("" for none). */
+export type PageviewInput = { href: string; referrer: string };
 
 /** Records what the site counts. Created by {@link createTracker}. */
 export type Tracker = {
-  /**
-   * @param href the page's full URL; only origin and path are sent
-   * @param referrer the referring URL, or "" for none; only its origin is sent
-   */
-  pageview(href: string, referrer: string): void;
-  /** @param platform the clicked link's platform, from {@link downloadPlatformOf} */
+  /** Counts a page view; only the reduced URL and the referrer's domain are sent. */
+  pageview(view: PageviewInput): void;
+  /** @param platform the clicked link's platform id, from {@link downloadPlatformOf} */
   downloadClicked(platform: string): void;
 };
 
@@ -107,17 +117,36 @@ export function stripPageUrl(href: string): string | null {
 }
 
 /**
- * Reduces a referrer to its origin: which site sent the visitor, never which
- * page of it.
+ * Reduces a referrer to its domain: which site sent the visitor, never which
+ * page of it, and not its scheme or port either.
  *
- * @returns the origin, or `null` for no referrer or one that is not http(s)
+ * @returns the hostname, or `null` for no referrer or one that is not http(s)
  */
-export function referrerOrigin(referrer: string): string | null {
-  return parseHttpUrl(referrer)?.origin ?? null;
+export function referringDomain(referrer: string): string | null {
+  return parseHttpUrl(referrer)?.hostname ?? null;
 }
 
 /**
- * Validates a platform name read from a link's attribute. The page is ours,
+ * The properties of a `$pageview`: the stripped URL, the host and path
+ * PostHog's web analytics reads, and the referrer's domain.
+ *
+ * @returns the properties, or `null` when the page URL is not http(s)
+ */
+export function pageviewProperties(view: PageviewInput): Record<string, PropertyValue> | null {
+  const stripped = stripPageUrl(view.href);
+  if (stripped === null) return null;
+  // Re-parsed from the stripped form, so nothing dropped above can come back.
+  const page = new URL(stripped);
+  return {
+    $current_url: stripped,
+    $host: page.hostname,
+    $pathname: page.pathname,
+    $referring_domain: referringDomain(view.referrer),
+  };
+}
+
+/**
+ * Validates a platform id read from a link's attribute. The page is ours,
  * but the value still goes to a third party, so it is bounded.
  */
 export function parsePlatform(raw: string | null | undefined): string | null {
@@ -140,7 +169,7 @@ function isElementLike(target: unknown): target is ElementLike {
  * `data-download-platform` value on the target or the nearest ancestor
  * carrying one.
  *
- * @returns the platform, or `null` when the click was not on a download link
+ * @returns the platform id, or `null` when the click was not on a download link
  */
 export function downloadPlatformOf(target: unknown): string | null {
   if (!isElementLike(target)) return null;
@@ -148,12 +177,38 @@ export function downloadPlatformOf(target: unknown): string | null {
   return parsePlatform(link?.getAttribute(DOWNLOAD_PLATFORM_ATTRIBUTE));
 }
 
-/** Properties of a `$pageview`, with the URL and referrer already reduced. */
-export function pageviewProperties(href: string, referrer: string): Record<string, string | null> {
-  return {
-    $current_url: stripPageUrl(href),
-    $referrer: referrerOrigin(referrer),
-  };
+/** Where the page is, as the browser reports it. */
+export type PageLocation = { href: string; pathname: string; origin: string };
+
+/**
+ * Decides whether a route change is a new page view, and what referred it.
+ * The same path twice (React runs effects twice in development) is not a
+ * new view. `document.referrer` never changes after the page loads, so only
+ * the first view uses it; a later, client-side view was referred by this
+ * site itself.
+ *
+ * @param lastPath the path last counted in this page load, or `null` for none
+ * @returns the view to count, or `null` when there is none
+ */
+export function nextPageview(
+  lastPath: string | null,
+  path: string,
+  href: string,
+  documentReferrer: string,
+  origin: string,
+): PageviewInput | null {
+  if (lastPath === path) return null;
+  return { href, referrer: lastPath === null ? documentReferrer : origin };
+}
+
+/**
+ * Decides whether a `pageshow` is a new page view. Only a page restored from
+ * the back-forward cache (`persisted`) is: a normal load is counted by the
+ * route change. Where the visitor came back from is not known, so no
+ * referrer is sent.
+ */
+export function restoredPageview(persisted: boolean, href: string): PageviewInput | null {
+  return persisted ? { href, referrer: "" } : null;
 }
 
 /**
@@ -164,7 +219,7 @@ export function buildPayload(
   apiKey: string,
   distinctId: string,
   event: string,
-  properties: Record<string, string | null>,
+  properties: Record<string, PropertyValue>,
 ): CapturePayload {
   return {
     api_key: apiKey,
@@ -174,23 +229,25 @@ export function buildPayload(
   };
 }
 
+/** The request options for every send: no cookies, no Referer, and survives the page closing. */
+export const SEND_OPTIONS = {
+  method: "POST",
+  keepalive: true,
+  credentials: "omit",
+  referrerPolicy: "no-referrer",
+} as const satisfies RequestInit;
+
 /**
- * Sends a payload without credentials. The body is a string, so both
- * transports send it as text/plain, which needs no CORS preflight; PostHog
- * reads the JSON regardless of the content type.
+ * Sends a payload. The body is a string, so it goes as text/plain, which
+ * needs no CORS preflight; PostHog reads the JSON regardless of the content
+ * type.
  */
-export function sendPayload(payload: CapturePayload, transport: Transport): void {
-  const body = JSON.stringify(payload);
-  // sendBeacon returns false when the browser refuses to queue the request.
-  if (transport.sendBeacon?.(CAPTURE_URL, body)) return;
-  if (!transport.fetch) return;
-  transport
-    .fetch(CAPTURE_URL, { method: "POST", body, keepalive: true, credentials: "omit" })
-    .catch((error: unknown) => {
-      // Counting is best effort: a blocked or offline request must never
-      // break the page, so it is reported for debugging and dropped.
-      console.debug(`analytics: sending ${payload.event} failed`, error);
-    });
+export function sendPayload(payload: CapturePayload, fetch: Fetch): void {
+  fetch(CAPTURE_URL, { ...SEND_OPTIONS, body: JSON.stringify(payload) }).catch((error: unknown) => {
+    // Counting is best effort: a blocked or offline request must never
+    // break the page, so it is reported for debugging and dropped.
+    console.debug(`analytics: sending ${payload.event} failed`, error);
+  });
 }
 
 /** What {@link createTracker} needs from the browser. */
@@ -198,16 +255,15 @@ export type TrackerOptions = {
   /** The raw `NEXT_PUBLIC_POSTHOG_KEY`. */
   apiKey: string | undefined;
   signals: PrivacySignals;
-  transport: Transport;
+  fetch: Fetch;
   /** `crypto.randomUUID`, absent outside a secure context. */
   randomUUID?: () => string;
 };
 
 /**
- * Creates the tracker for one page load, or returns `null` when nothing may
+ * Creates a tracker with a new random id, or returns `null` when nothing may
  * be sent: no project key, Do Not Track or Global Privacy Control set, or no
- * way to make a random id. The id is generated once here and lives only in
- * the returned closure.
+ * way to make a random id. The id lives only in the returned closure.
  */
 export function createTracker(options: TrackerOptions): Tracker | null {
   const apiKey = parseProjectKey(options.apiKey);
@@ -216,19 +272,74 @@ export function createTracker(options: TrackerOptions): Tracker | null {
   if (!options.randomUUID) return null;
 
   const distinctId = options.randomUUID();
-  const capture = (event: string, properties: Record<string, string | null>) =>
-    sendPayload(buildPayload(apiKey, distinctId, event, properties), options.transport);
+  const capture = (event: string, properties: Record<string, PropertyValue>) =>
+    sendPayload(buildPayload(apiKey, distinctId, event, properties), options.fetch);
 
   return {
-    pageview(href, referrer) {
-      const properties = pageviewProperties(href, referrer);
-      if (properties.$current_url === null) return;
+    pageview(view) {
+      const properties = pageviewProperties(view);
+      if (properties === null) return;
       capture(PAGEVIEW_EVENT, properties);
     },
     downloadClicked(platform) {
       const parsed = parsePlatform(platform);
       if (parsed === null) return;
       capture(DOWNLOAD_CLICKED_EVENT, { platform: parsed });
+    },
+  };
+}
+
+/** One page load's counting, driven by browser events. Created by {@link createPageCounter}. */
+export type PageCounter = {
+  /** The App Router path changed, including the first render. */
+  routeChanged(location: PageLocation, documentReferrer: string): void;
+  /** `pagehide`: the visitor left, so the id is forgotten. */
+  pageHidden(): void;
+  /** `pageshow`: counts a page restored from the back-forward cache. */
+  pageShown(persisted: boolean, location: PageLocation): void;
+  /** A click anywhere; counts it when it is on a download link. */
+  clicked(target: unknown): void;
+};
+
+/**
+ * Ties the decisions above to page events. The tracker, and with it the
+ * random id, is made on first use and dropped on `pagehide`, so a page
+ * restored with Back gets a new id instead of the one it left with.
+ *
+ * @param makeTracker called for each new id; in the browser, {@link createTracker}
+ */
+export function createPageCounter(makeTracker: () => Tracker | null): PageCounter {
+  // `undefined`: not made yet, or forgotten on leaving. `null`: counting is off.
+  let tracker: Tracker | null | undefined;
+  let lastPath: string | null = null;
+
+  const current = (): Tracker | null => {
+    if (tracker === undefined) tracker = makeTracker();
+    return tracker;
+  };
+
+  const count = (path: string, view: PageviewInput | null) => {
+    if (view === null) return;
+    lastPath = path;
+    current()?.pageview(view);
+  };
+
+  return {
+    routeChanged(location, documentReferrer) {
+      count(
+        location.pathname,
+        nextPageview(lastPath, location.pathname, location.href, documentReferrer, location.origin),
+      );
+    },
+    pageHidden() {
+      tracker = undefined;
+    },
+    pageShown(persisted, location) {
+      count(location.pathname, restoredPageview(persisted, location.href));
+    },
+    clicked(target) {
+      const platform = downloadPlatformOf(target);
+      if (platform !== null) current()?.downloadClicked(platform);
     },
   };
 }

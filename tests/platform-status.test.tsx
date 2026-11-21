@@ -7,12 +7,14 @@ import {
   platformLink,
   platforms,
   releasesUrl,
+  type PlatformId,
   type PlatformStatus as Status,
 } from "@/content/download";
 import { DOWNLOAD_PLATFORM_ATTRIBUTE } from "@/lib/analytics";
 
+// The real ids are the lowercased names; the escaping test passes markup through both.
 const render = (name: string, status: Status, link?: string) =>
-  renderToStaticMarkup(<PlatformStatus platform={{ name, status, link }} />);
+  renderToStaticMarkup(<PlatformStatus platform={{ id: name.toLowerCase() as PlatformId, name, status, link }} />);
 
 describe("PlatformStatus", () => {
   it("links an available platform's label to the releases page", () => {
@@ -46,10 +48,17 @@ describe("PlatformStatus", () => {
     }
   });
 
-  it("marks each link with its platform, so a click on it is counted as that platform", () => {
-    expect(render("macOS", "available")).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="macOS"`);
-    expect(render("iOS", "testflight", TESTFLIGHT_URL)).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="iOS"`);
+  it("marks each link with its stable platform id, not its display name", () => {
+    expect(render("macOS", "available")).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="macos"`);
+    expect(render("iOS", "testflight", TESTFLIGHT_URL)).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="ios"`);
     expect(render("Windows", "next-release")).not.toContain(DOWNLOAD_PLATFORM_ATTRIBUTE);
+  });
+
+  it("sends each real platform's own id for its link", () => {
+    for (const p of platforms.filter((platform) => platformLink(platform) !== null)) {
+      const html = renderToStaticMarkup(<PlatformStatus platform={p} />);
+      expect(html, p.name).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="${p.id}"`);
+    }
   });
 
   it("escapes the platform name", () => {
