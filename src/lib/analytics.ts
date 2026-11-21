@@ -58,6 +58,8 @@ export type CapturePayload = {
   api_key: string;
   event: string;
   distinct_id: string;
+  // The index signature has to admit the two flags' booleans; `buildPayload`
+  // is what keeps every other property a string or null.
   properties: { [name: string]: PropertyValue | boolean; $process_person_profile: false; $geoip_disable: true };
 };
 
@@ -212,8 +214,11 @@ export function restoredPageview(persisted: boolean, href: string): PageviewInpu
 }
 
 /**
- * Builds one capture payload. `$process_person_profile: false` is set last so
- * no caller-supplied property can turn person profiles back on.
+ * Builds one capture payload. Two flags are set last, so no caller-supplied
+ * property can turn either back: `$process_person_profile: false`, so PostHog
+ * builds no profile of anyone; and `$geoip_disable: true`, because the policy
+ * promises the address is discarded, and a location worked out from it
+ * first would be something the policy never mentions.
  */
 export function buildPayload(
   apiKey: string,
@@ -225,10 +230,6 @@ export function buildPayload(
     api_key: apiKey,
     event,
     distinct_id: distinctId,
-    // Both set last, so no caller-supplied property can turn them back.
-    // `$geoip_disable`: the policy promises the address is discarded, and a
-    // location worked out from it before that would be something it never
-    // mentions, so none is worked out.
     properties: { ...properties, $process_person_profile: false, $geoip_disable: true },
   };
 }

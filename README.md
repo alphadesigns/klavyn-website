@@ -119,7 +119,8 @@ node scripts/sync-legal.mjs ../klavyn
 Re-run it whenever those documents change, and commit the regenerated
 `src/content/legal.generated.ts`. Until klavyn's `posthog-telemetry` branch
 is merged, sync only from a checkout of that branch: its `main` does not yet
-describe this site's counting, and `tests/legal.test.ts` fails if the policy
-stops saying what the counting code does. While the sources still contain
+describe this site's counting, and `tests/legal.test.ts` fails if the
+policy's website paragraph stops naming the counting, Do Not Track, Global
+Privacy Control, the absence of cookies, or that the address is discarded. While the sources still contain
 `[PLACEHOLDER]` markers the pages show a draft notice, and `tests/legal.test.ts`
 makes sure that notice cannot be dropped while a placeholder remains.
