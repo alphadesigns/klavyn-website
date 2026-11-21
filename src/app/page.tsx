@@ -28,6 +28,7 @@ import { availablePlatforms, listNames, platforms, releasesUrl } from "@/content
 import { faq } from "@/content/faq";
 import { heroShots, sharingShots, tourDesktop, tourPhones } from "@/content/screenshots";
 import { selfHostCommands } from "@/content/self-host";
+import { ALL_PLATFORMS } from "@/lib/analytics";
 import { faqJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
 
@@ -432,7 +433,7 @@ function Download() {
           ))}
         </ul>
         <div className="download-foot">
-          <a href={releasesUrl} className="btn btn--primary">
+          <a href={releasesUrl} className="btn btn--primary" data-download-platform={ALL_PLATFORMS}>
             <DownloadIcon />
             Go to the releases page
           </a>

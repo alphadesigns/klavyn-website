@@ -9,6 +9,7 @@ import {
   releasesUrl,
   type PlatformStatus as Status,
 } from "@/content/download";
+import { DOWNLOAD_PLATFORM_ATTRIBUTE } from "@/lib/analytics";
 
 const render = (name: string, status: Status, link?: string) =>
   renderToStaticMarkup(<PlatformStatus platform={{ name, status, link }} />);
@@ -43,6 +44,12 @@ describe("PlatformStatus", () => {
       expect(html, status).not.toContain("<a");
       expect(html, status).toContain(STATUS_LABELS[status]);
     }
+  });
+
+  it("marks each link with its platform, so a click on it is counted as that platform", () => {
+    expect(render("macOS", "available")).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="macOS"`);
+    expect(render("iOS", "testflight", TESTFLIGHT_URL)).toContain(`${DOWNLOAD_PLATFORM_ATTRIBUTE}="iOS"`);
+    expect(render("Windows", "next-release")).not.toContain(DOWNLOAD_PLATFORM_ATTRIBUTE);
   });
 
   it("escapes the platform name", () => {

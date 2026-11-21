@@ -2,7 +2,16 @@
 
 Marketing site for [Klavyn](https://github.com/alphadesigns/klavyn), the
 self-hosted, end-to-end encrypted password manager. Next.js 16 (App Router),
-fully static, no client-side analytics or third-party scripts.
+fully static, no third-party scripts.
+
+Analytics are cookieless and first-party: a small script of our own counts
+page views and download clicks and sends them to PostHog's EU host. No
+personal data is collected. The only identifier is a random id made for each
+page load and never stored (no cookies, no local or session storage); URLs are
+sent without their query string or fragment, and referrers as their origin
+only. Visitors with Do Not Track or Global Privacy Control on are not counted
+at all, and with `NEXT_PUBLIC_POSTHOG_KEY` unset nothing is sent. The code is
+`src/lib/analytics.ts` and `src/components/Analytics.tsx`.
 
 ## Develop
 
@@ -14,7 +23,7 @@ npm run dev                    # http://localhost:3000
 
 | Command | Does |
 | --- | --- |
-| `npm test` | Unit tests (Vitest): URL handling, structured data, crawler files, snippets |
+| `npm test` | Unit tests (Vitest): URL handling, structured data, crawler files, snippets, analytics payloads |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint with the Next.js config |
 | `npm run build` | Static production build |
