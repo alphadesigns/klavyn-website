@@ -14,7 +14,15 @@ export type PlatformStatus = "available" | "testflight" | "next-release" | "not-
 /** The public invitation to the iOS beta. Anyone with the link can join. */
 export const TESTFLIGHT_URL = "https://testflight.apple.com/join/dQXPJz6t";
 
+/**
+ * A platform's stable id. It is what download-click counts record, so it
+ * never changes when a display name does: renaming one would split the
+ * history in two.
+ */
+export type PlatformId = "macos" | "android" | "windows" | "linux" | "ios";
+
 export type Platform = {
+  id: PlatformId;
   /** Display name, also used in structured data's operatingSystem. */
   name: string;
   status: PlatformStatus;
@@ -31,6 +39,7 @@ export type Platform = {
 
 export const platforms: readonly Platform[] = [
   {
+    id: "macos",
     name: "macOS",
     status: "available",
     file: "Universal .dmg (Apple silicon and Intel)",
@@ -40,6 +49,7 @@ export const platforms: readonly Platform[] = [
     ],
   },
   {
+    id: "android",
     name: "Android",
     status: "available",
     file: "arm64 .apk",
@@ -49,18 +59,21 @@ export const platforms: readonly Platform[] = [
     ],
   },
   {
+    id: "windows",
     name: "Windows",
     status: "next-release",
     file: "Installer",
     firstLaunch: ["SmartScreen will warn about an unsigned installer: choose More info, then Run anyway."],
   },
   {
+    id: "linux",
     name: "Linux",
     status: "next-release",
     file: ".deb and .AppImage",
     firstLaunch: ["Install the .deb with apt, or make the .AppImage executable and run it."],
   },
   {
+    id: "ios",
     name: "iOS",
     status: "testflight",
     file: "TestFlight beta",

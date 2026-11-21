@@ -84,3 +84,24 @@ describe("the documents this site publishes", () => {
     expect(doc.draft).toBe(hasPlaceholder);
   });
 });
+
+// The counting code and the policy that discloses it ship together. A sync
+// from a klavyn checkout whose policy does not describe the site's counting
+// would publish the code without its disclosure; this makes that fail.
+describe("the privacy policy discloses the site's counting", () => {
+  it("names it, and the signals that turn it off", () => {
+    // Within the website's own paragraph: the app's section says "no
+    // cookies" too, so a check against the whole policy would pass even if
+    // this paragraph stopped promising it.
+    const privacy = legalMarkdown.privacy;
+    const start = privacy.indexOf("**Our website counts visits.**");
+    expect(start, "the website paragraph is missing").toBeGreaterThanOrEqual(0);
+    const end = privacy.indexOf("\n\n", start);
+    const paragraph = privacy.slice(start, end === -1 ? undefined : end);
+    expect(paragraph).toMatch(/no cookies/i);
+    expect(paragraph).toContain("Do Not Track");
+    expect(paragraph).toContain("Global Privacy Control");
+    // The promise the "Discard client IP data" deploy step exists for.
+    expect(paragraph).toMatch(/discard/i);
+  });
+});

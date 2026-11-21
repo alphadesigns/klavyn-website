@@ -13,6 +13,7 @@ import { softwareApplicationJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 const platform = (name: string, status: Platform["status"]): Platform => ({
+  id: "macos",
   name,
   status,
   file: "file",
@@ -29,6 +30,11 @@ describe("listNames", () => {
 });
 
 describe("platforms", () => {
+  it("gives every platform a unique, stable lowercase id", () => {
+    expect(platforms.map((p) => p.id)).toEqual(["macos", "android", "windows", "linux", "ios"]);
+    expect(new Set(platforms.map((p) => p.id)).size).toBe(platforms.length);
+  });
+
   it("gives every platform a file and at least one first-launch step", () => {
     for (const p of platforms) {
       expect(p.file.trim(), p.name).not.toBe("");
