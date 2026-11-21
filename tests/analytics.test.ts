@@ -143,13 +143,14 @@ describe("buildPayload", () => {
       api_key: KEY,
       event: "$pageview",
       distinct_id: ID,
-      properties: { $current_url: "https://klavyn.com/", $process_person_profile: false },
+      properties: { $current_url: "https://klavyn.com/", $process_person_profile: false, $geoip_disable: true },
     });
   });
 
   it("cannot be talked into person profiles by a property", () => {
-    const payload = buildPayload(KEY, ID, "x", { $process_person_profile: "true" });
+    const payload = buildPayload(KEY, ID, "x", { $process_person_profile: "true", $geoip_disable: "false" });
     expect(payload.properties.$process_person_profile).toBe(false);
+    expect(payload.properties.$geoip_disable).toBe(true);
   });
 });
 
@@ -227,9 +228,12 @@ describe("sendPayload", () => {
   });
 
   it("never uses sendBeacon, which always sends credentials", () => {
-    const source = fs.readFileSync(path.join(__dirname, "../src/lib/analytics.ts"), "utf8");
-    const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
-    expect(code).not.toMatch(/sendBeacon/);
+    // Both files, the wiring included: it is where `navigator` is in reach.
+    // Matched without stripping comments, so no comment can hide code.
+    for (const file of ["../src/lib/analytics.ts", "../src/components/Analytics.tsx"]) {
+      const source = fs.readFileSync(path.join(__dirname, file), "utf8");
+      expect(source, file).not.toMatch(/\bsendBeacon\b/);
+    }
   });
 
   it("reports a failed send instead of throwing into the page", async () => {
@@ -281,6 +285,7 @@ describe("createTracker", () => {
           $pathname: "/terms",
           $referring_domain: "mail.example.com",
           $process_person_profile: false,
+          $geoip_disable: true,
         },
       },
     ]);
@@ -300,7 +305,7 @@ describe("createTracker", () => {
         api_key: KEY,
         event: "download_clicked",
         distinct_id: ID,
-        properties: { platform: "android", $process_person_profile: false },
+        properties: { platform: "android", $process_person_profile: false, $geoip_disable: true },
       },
     ]);
   });

@@ -84,3 +84,16 @@ describe("the documents this site publishes", () => {
     expect(doc.draft).toBe(hasPlaceholder);
   });
 });
+
+// The counting code and the policy that discloses it ship together. A sync
+// from a klavyn checkout whose policy does not describe the site's counting
+// would publish the code without its disclosure; this makes that fail.
+describe("the privacy policy discloses the site's counting", () => {
+  it("names it, and the signals that turn it off", () => {
+    const privacy = legalMarkdown.privacy;
+    expect(privacy).toContain("Our website counts visits");
+    expect(privacy).toContain("Do Not Track");
+    expect(privacy).toContain("Global Privacy Control");
+    expect(privacy).toMatch(/no cookies/i);
+  });
+});

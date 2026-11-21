@@ -44,7 +44,7 @@ export type PrivacySignals = {
 };
 
 /**
- * How a payload leaves the browser. Only `fetch`: `navigator.sendBeacon`
+ * How a payload leaves the browser. Only `fetch`: the Beacon API
  * always sends credentials, so it would carry any cookies the browser holds
  * for posthog.com.
  */
@@ -58,7 +58,7 @@ export type CapturePayload = {
   api_key: string;
   event: string;
   distinct_id: string;
-  properties: { [name: string]: PropertyValue | false; $process_person_profile: false };
+  properties: { [name: string]: PropertyValue | boolean; $process_person_profile: false; $geoip_disable: true };
 };
 
 /** A page view, before reduction: the full URL and the full referrer ("" for none). */
@@ -225,7 +225,11 @@ export function buildPayload(
     api_key: apiKey,
     event,
     distinct_id: distinctId,
-    properties: { ...properties, $process_person_profile: false },
+    // Both set last, so no caller-supplied property can turn them back.
+    // `$geoip_disable`: the policy promises the address is discarded, and a
+    // location worked out from it before that would be something it never
+    // mentions, so none is worked out.
+    properties: { ...properties, $process_person_profile: false, $geoip_disable: true },
   };
 }
 

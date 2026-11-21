@@ -4,15 +4,17 @@ Marketing site for [Klavyn](https://github.com/alphadesigns/klavyn), the
 self-hosted, end-to-end encrypted password manager. Next.js 16 (App Router),
 fully static, no third-party scripts.
 
-Analytics are cookieless and first-party: a small script of our own counts
-page views and download clicks and sends them to PostHog's EU host. No
-personal data is collected. The only identifier is a random id made for each
+Page views and download clicks are counted without cookies: a small script
+of our own sends them to PostHog's EU host. PostHog sees the visitor's IP
+address on the way in and is configured to discard it, and is told not to
+work out a location from it. The only identifier is a random id made for each
 page load, never stored (no cookies, no local or session storage) and
-forgotten when the visitor leaves the page; URLs are sent without their query
+forgotten when the visitor leaves the page. URLs are sent without their query
 string or fragment, referrers as their domain only, and requests carry no
-cookies or Referer header. Visitors with Do Not Track or Global Privacy Control on are not counted
-at all, and with `NEXT_PUBLIC_POSTHOG_KEY` unset nothing is sent. The code is
-`src/lib/analytics.ts` and `src/components/Analytics.tsx`.
+cookies or Referer header. Visitors with Do Not Track or Global Privacy
+Control on are not counted at all, and with `NEXT_PUBLIC_POSTHOG_KEY` unset
+nothing is sent. The code is `src/lib/analytics.ts` and
+`src/components/Analytics.tsx`.
 
 ## Develop
 
@@ -76,9 +78,10 @@ project; if the klavyn server's app telemetry uses the same project, that is
 fine, because the server already sends no client IP. Leave the key out of
 `.env` and the site sends nothing at all.
 
-**Do not deploy the analytics change until the klavyn repository's telemetry
-branch is merged and its server deployed.** The synced privacy policy
-describes behaviour that only that branch has.
+**Do not deploy this branch, `posthog-pageviews`, until the klavyn
+repository's `posthog-telemetry` branch is merged and its server deployed** --
+with or without the key. The privacy policy synced into this branch describes
+behaviour only that branch has, and deploying it publishes that text.
 
 ```sh
 # on the server, as root
@@ -114,6 +117,9 @@ node scripts/sync-legal.mjs ../klavyn
 ```
 
 Re-run it whenever those documents change, and commit the regenerated
-`src/content/legal.generated.ts`. While the sources still contain
+`src/content/legal.generated.ts`. Until klavyn's `posthog-telemetry` branch
+is merged, sync only from a checkout of that branch: its `main` does not yet
+describe this site's counting, and `tests/legal.test.ts` fails if the policy
+stops saying what the counting code does. While the sources still contain
 `[PLACEHOLDER]` markers the pages show a draft notice, and `tests/legal.test.ts`
 makes sure that notice cannot be dropped while a placeholder remains.
